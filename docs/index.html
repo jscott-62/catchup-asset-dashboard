@@ -177,9 +177,78 @@
     border: 1px solid var(--border);
     border-radius: 12px;
     padding: 20px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, opacity 0.2s;
+    position: relative;
   }
   .asset-card:hover { border-color: var(--accent); }
+  .asset-card.selected { border-color: var(--accent); }
+  .asset-card.dimmed { opacity: 0.5; }
+
+  /* Asset checkbox */
+  .asset-checkbox {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    width: 24px;
+    height: 24px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--bg);
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    z-index: 2;
+  }
+  .asset-checkbox:checked {
+    background: var(--accent);
+    border-color: var(--accent);
+  }
+  .asset-checkbox:checked::after {
+    content: '✓';
+    display: block;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--bg);
+    line-height: 20px;
+  }
+  .asset-checkbox:hover { border-color: var(--accent); }
+
+  /* Selection summary bar */
+  .selection-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .selection-count {
+    font-size: 14px;
+    color: var(--muted);
+  }
+  .selection-count strong { color: var(--accent); }
+  .selection-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .sel-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .sel-btn:hover { color: var(--text); border-color: var(--text); }
   .asset-header {
     display: flex;
     justify-content: space-between;
@@ -611,6 +680,16 @@
 
   <!-- TAB: OVERVIEW -->
   <div class="tab-content active" id="tab-overview">
+    <div class="selection-bar">
+      <div class="selection-count" id="selectionCount">
+        Select assets to compare. <strong>0 selected</strong>
+      </div>
+      <div class="selection-actions">
+        <button class="sel-btn" id="selAllCrypto">Select All Crypto</button>
+        <button class="sel-btn" id="selAllTraditional">Select All Stocks</button>
+        <button class="sel-btn" id="selClearAll">Clear All</button>
+      </div>
+    </div>
     <div class="category-filters" id="categoryFilters">
       <button class="cat-btn active" data-category="all">All</button>
       <button class="cat-btn" data-category="Cryptocurrency">Crypto</button>
@@ -714,7 +793,8 @@
     activeTab: 'overview',
     compareTimeframe: 10,
     portfolioAllocations: {},
-    customTickers: []
+    customTickers: [],
+    selectedAssets: []
   };
   let _assetMetrics = {};
   let _activeAssets = [];
@@ -1017,7 +1097,8 @@
       if (_categoryFilter === 'traditional' && asset.category === 'Cryptocurrency') return;
 
       const card = document.createElement('div');
-      card.className = 'asset-card';
+      const isSelected = _settings.selectedAssets.includes(key);
+      card.className = 'asset-card' + (isSelected ? ' selected' : '');
 
       const catColors = {
         'Cryptocurrency': 'var(--accent)',
@@ -1031,6 +1112,7 @@
       const catColor = catColors[asset.category] || 'var(--muted)';
 
       card.innerHTML = `
+        <input type="checkbox" class="asset-checkbox" data-asset="${key}" ${isSelected ? 'checked' : ''} title="Select for comparison">
         <div class="asset-header">
           <div>
             <div class="asset-name" style="color:${asset.color}">${asset.name}</div>
@@ -1071,6 +1153,41 @@
       `;
       grid.appendChild(card);
     });
+
+    // Bind checkbox events
+    grid.querySelectorAll('.asset-checkbox').forEach(cb => {
+      cb.addEventListener('change', (e) => {
+        const assetKey = e.target.dataset.asset;
+        if (e.target.checked) {
+          if (!_settings.selectedAssets.includes(assetKey)) {
+            _settings.selectedAssets.push(assetKey);
+          }
+        } else {
+          _settings.selectedAssets = _settings.selectedAssets.filter(k => k !== assetKey);
+        }
+        // Update card visual
+        e.target.closest('.asset-card').classList.toggle('selected', e.target.checked);
+        updateSelectionCount();
+        debounceSave();
+      });
+    });
+
+    updateSelectionCount();
+  }
+
+  function getSelectedAssets() {
+    return _settings.selectedAssets.filter(k => _data.assets[k] && _assetMetrics[k]);
+  }
+
+  function updateSelectionCount() {
+    const count = _settings.selectedAssets.length;
+    const el = document.getElementById('selectionCount');
+    if (count === 0) {
+      el.innerHTML = 'Check the assets you want to compare. <strong>0 selected</strong>';
+    } else {
+      const names = _settings.selectedAssets.map(k => _data.assets[k] ? _data.assets[k].name : k).join(', ');
+      el.innerHTML = '<strong>' + count + ' selected:</strong> ' + names;
+    }
   }
 
   // --- Charts (Pure Canvas) ---
@@ -1096,10 +1213,17 @@
     const { ctx, w, h } = setupCanvas(canvas);
     const years = _settings.compareTimeframe || 10;
 
-    const assets = _activeAssets.filter(k => _assetMetrics[k] && _assetMetrics[k].returns[String(years)] !== null);
+    const selected = getSelectedAssets();
+    const assets = selected.filter(k => _assetMetrics[k] && _assetMetrics[k].returns[String(years)] !== null);
     const values = assets.map(k => _assetMetrics[k].returns[String(years)] || 0);
 
-    if (assets.length === 0) return;
+    if (assets.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Select assets on the Overview tab to compare them here.', w / 2, h / 2);
+      return;
+    }
 
     // Layout
     const margin = { top: 30, right: 30, bottom: 50, left: 70 };
@@ -1200,13 +1324,22 @@
 
     ctx.clearRect(0, 0, w, h);
 
-    // Calculate growth of $10,000 for each asset
+    // Calculate growth of $10,000 for each selected asset
+    const selected = getSelectedAssets();
+    if (selected.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Select assets on the Overview tab to compare them here.', w / 2, h / 2);
+      return;
+    }
+
     const datasets = [];
     let globalMax = 10000;
     let globalMin = 10000;
     let maxLen = 0;
 
-    _activeAssets.forEach(key => {
+    selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset) return;
       const prices = asset.monthlyPrices;
@@ -1300,10 +1433,19 @@
     const plotW = w - margin.left - margin.right;
     const plotH = h - margin.top - margin.bottom;
 
-    const assets = _activeAssets.filter(k => _assetMetrics[k]);
+    const selected = getSelectedAssets();
+    const assets = selected.filter(k => _assetMetrics[k]);
     const values = assets.map(k => _assetMetrics[k].maxDrawdown.drawdown);
 
     ctx.clearRect(0, 0, w, h);
+
+    if (assets.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Select assets on the Overview tab to compare them here.', w / 2, h / 2);
+      return;
+    }
 
     const minVal = Math.min(...values) * 1.1;
 
@@ -1356,13 +1498,20 @@
     const budget = _settings.monthlyBudget;
     document.getElementById('dcaBudgetDisplay').textContent = '$' + budget.toLocaleString();
 
+    const selected = getSelectedAssets();
+
+    if (selected.length === 0) {
+      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px;">Select assets on the Overview tab to see DCA simulations here.</p>';
+      return;
+    }
+
     let html = '';
     [{ label: 'Last 5 Years (60 months)', months: 60 }, { label: 'Last 10 Years (120 months)', months: 120 }].forEach(period => {
       html += `<div class="dca-period-header">${period.label}</div>`;
       html += '<div class="dca-table-wrap"><table class="dca-table">';
       html += '<thead><tr><th>Asset</th><th>Total Invested</th><th>Ending Value</th><th>Gain/Loss</th><th>Return %</th><th>Ann. Return</th></tr></thead><tbody>';
 
-      _activeAssets.forEach(key => {
+      selected.forEach(key => {
         const asset = _data.assets[key];
         if (!asset) return;
         const result = calcDCA(asset.monthlyPrices, budget, period.months);
@@ -1390,9 +1539,17 @@
     const slidersEl = document.getElementById('portfolioSliders');
     const metricsEl = document.getElementById('blendedMetrics');
 
+    const selected = getSelectedAssets();
+
+    if (selected.length === 0) {
+      slidersEl.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px;">Select assets on the Overview tab to build a portfolio here.</p>';
+      metricsEl.innerHTML = '';
+      return;
+    }
+
     // Sliders
     let slidersHtml = '';
-    _activeAssets.forEach(key => {
+    selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset) return;
       const pct = _settings.portfolioAllocations[key] || 0;
@@ -1438,7 +1595,7 @@
     let blendedVol = 0;
     let totalWeight = 0;
 
-    _activeAssets.forEach(key => {
+    getSelectedAssets().forEach(key => {
       const pct = (_settings.portfolioAllocations[key] || 0) / 100;
       const m = _assetMetrics[key];
       if (!m || pct === 0) return;
@@ -1512,9 +1669,13 @@
         _settings.activeTab = tab;
         debounceSave();
 
-        // Redraw charts when switching to compare tab
+        // Re-render content when switching tabs
         if (tab === 'compare') {
           setTimeout(renderCompareCharts, 150);
+        } else if (tab === 'dca') {
+          renderDCA();
+        } else if (tab === 'portfolio') {
+          renderPortfolio();
         }
       });
     });
@@ -1533,6 +1694,31 @@
     // User inputs
     ['inputReturn', 'inputTimeline', 'inputBudget'].forEach(id => {
       document.getElementById(id).addEventListener('input', onInputChange);
+    });
+
+    // Selection bar buttons
+    document.getElementById('selAllCrypto').addEventListener('click', () => {
+      _activeAssets.forEach(k => {
+        if (_data.assets[k] && _data.assets[k].category === 'Cryptocurrency' && !_settings.selectedAssets.includes(k)) {
+          _settings.selectedAssets.push(k);
+        }
+      });
+      renderAssetCards();
+      debounceSave();
+    });
+    document.getElementById('selAllTraditional').addEventListener('click', () => {
+      _activeAssets.forEach(k => {
+        if (_data.assets[k] && _data.assets[k].category !== 'Cryptocurrency' && !_settings.selectedAssets.includes(k)) {
+          _settings.selectedAssets.push(k);
+        }
+      });
+      renderAssetCards();
+      debounceSave();
+    });
+    document.getElementById('selClearAll').addEventListener('click', () => {
+      _settings.selectedAssets = [];
+      renderAssetCards();
+      debounceSave();
     });
 
     // Category filter buttons
