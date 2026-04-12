@@ -451,6 +451,36 @@
     text-transform: uppercase;
   }
 
+  /* ===== CATEGORY FILTERS ===== */
+  .category-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+  }
+  .cat-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .cat-btn:hover { color: var(--text); border-color: var(--text); }
+  .cat-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .cat-btn .count {
+    font-size: 11px;
+    opacity: 0.7;
+    margin-left: 4px;
+  }
+
   /* ===== CUSTOM TICKER ===== */
   .custom-ticker-bar {
     display: flex;
@@ -581,10 +611,15 @@
 
   <!-- TAB: OVERVIEW -->
   <div class="tab-content active" id="tab-overview">
+    <div class="category-filters" id="categoryFilters">
+      <button class="cat-btn active" data-category="all">All</button>
+      <button class="cat-btn" data-category="Cryptocurrency">Crypto</button>
+      <button class="cat-btn" data-category="traditional">Stocks & ETFs</button>
+    </div>
     <div class="custom-ticker-bar">
       <input type="text" id="customTickerInput" placeholder="Enter ticker..." maxlength="10">
       <button id="addTickerBtn">+ Add Asset</button>
-      <span class="hint">Add any stock or ETF already in the database</span>
+      <span class="hint">Add any stock, ETF, or crypto already in the database</span>
       <span class="custom-ticker-msg" id="tickerMsg"></span>
     </div>
     <div class="asset-grid" id="assetGrid"></div>
@@ -684,6 +719,7 @@
   let _assetMetrics = {};
   let _activeAssets = [];
   let _debounceTimer = null;
+  let _categoryFilter = 'all';
 
   // --- Data Loading ---
   function loadData() {
@@ -701,6 +737,7 @@
   }
 
   function init() {
+    loadCachedAssets();
     loadSettings();
     populateInputs();
     computeAllMetrics();
@@ -960,10 +997,24 @@
     const grid = document.getElementById('assetGrid');
     grid.innerHTML = '';
 
+    // Update filter button counts
+    const cryptoCount = _activeAssets.filter(k => _data.assets[k] && _data.assets[k].category === 'Cryptocurrency').length;
+    const tradCount = _activeAssets.filter(k => _data.assets[k] && _data.assets[k].category !== 'Cryptocurrency').length;
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      const cat = btn.dataset.category;
+      if (cat === 'all') btn.innerHTML = 'All <span class="count">(' + _activeAssets.length + ')</span>';
+      if (cat === 'Cryptocurrency') btn.innerHTML = 'Crypto <span class="count">(' + cryptoCount + ')</span>';
+      if (cat === 'traditional') btn.innerHTML = 'Stocks & ETFs <span class="count">(' + tradCount + ')</span>';
+    });
+
     _activeAssets.forEach(key => {
       const asset = _data.assets[key];
       const m = _assetMetrics[key];
       if (!asset || !m) return;
+
+      // Apply category filter
+      if (_categoryFilter === 'Cryptocurrency' && asset.category !== 'Cryptocurrency') return;
+      if (_categoryFilter === 'traditional' && asset.category === 'Cryptocurrency') return;
 
       const card = document.createElement('div');
       card.className = 'asset-card';
@@ -1484,6 +1535,16 @@
       document.getElementById(id).addEventListener('input', onInputChange);
     });
 
+    // Category filter buttons
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _categoryFilter = btn.dataset.category;
+        renderAssetCards();
+      });
+    });
+
     // Custom ticker
     document.getElementById('addTickerBtn').addEventListener('click', addCustomTicker);
     document.getElementById('customTickerInput').addEventListener('keypress', e => {
@@ -1532,7 +1593,110 @@
     debounceSave();
   }
 
-  function addCustomTicker() {
+  // CoinGecko coin ID mapping for common tickers
+  const COINGECKO_MAP = {
+    'BTC': 'bitcoin', 'ETH': 'ethereum', 'XRP': 'ripple', 'BNB': 'binancecoin',
+    'SOL': 'solana', 'ADA': 'cardano', 'DOGE': 'dogecoin', 'AVAX': 'avalanche-2',
+    'LINK': 'chainlink', 'DOT': 'polkadot', 'SUI': 'sui', 'ATOM': 'cosmos',
+    'UNI': 'uniswap', 'LTC': 'litecoin', 'NEAR': 'near', 'MATIC': 'matic-network',
+    'SHIB': 'shiba-inu', 'TRX': 'tron', 'TON': 'the-open-network', 'XLM': 'stellar',
+    'ICP': 'internet-computer', 'APT': 'aptos', 'FIL': 'filecoin', 'ARB': 'arbitrum',
+    'OP': 'optimism', 'HBAR': 'hedera-hashgraph', 'VET': 'vechain', 'ALGO': 'algorand',
+    'AAVE': 'aave', 'MKR': 'maker', 'GRT': 'the-graph', 'FTM': 'fantom',
+    'SAND': 'the-sandbox', 'MANA': 'decentraland', 'AXS': 'axie-infinity',
+    'PEPE': 'pepe', 'WIF': 'dogwifcoin', 'BONK': 'bonk', 'FLOKI': 'floki',
+    'RENDER': 'render-token', 'INJ': 'injective-protocol', 'SEI': 'sei-network',
+    'STX': 'blockstack', 'RUNE': 'thorchain', 'CRO': 'crypto-com-chain',
+    'MSTR': 'microstrategy', 'COIN': 'coinbase', 'MARA': 'marathon-digital-holdings'
+  };
+
+  const CRYPTO_COLORS = [
+    '#ec4899', '#14b8a6', '#f97316', '#8b5cf6', '#10b981', '#e11d48',
+    '#06b6d4', '#84cc16', '#d946ef', '#0ea5e9', '#f43f5e', '#a3e635'
+  ];
+  let _colorIdx = 0;
+
+  async function fetchCoinGeckoData(ticker, coinId) {
+    const msg = document.getElementById('tickerMsg');
+    msg.textContent = 'Fetching ' + ticker + ' data from CoinGecko...';
+    msg.style.color = 'var(--accent)';
+
+    try {
+      const url = `https://api.coingecko.com/api/v3/coins/${coinId}/market_chart?vs_currency=usd&days=3650&interval=daily`;
+      const resp = await fetch(url, {
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!resp.ok) {
+        if (resp.status === 429) {
+          msg.textContent = 'Rate limited. Try again in a minute.';
+        } else {
+          msg.textContent = 'Could not fetch ' + ticker + '. Try again later.';
+        }
+        msg.style.color = 'var(--red)';
+        return false;
+      }
+
+      const data = await resp.json();
+
+      // Group by month, take last price per month
+      const monthly = {};
+      data.prices.forEach(([tsMs, price]) => {
+        const dt = new Date(tsMs);
+        const key = dt.toISOString().substring(0, 7);
+        monthly[key] = {
+          date: dt.toISOString().substring(0, 10),
+          close: Math.round(price * 100) / 100
+        };
+      });
+
+      const prices = Object.values(monthly).sort((a, b) => a.date.localeCompare(b.date));
+
+      if (prices.length < 3) {
+        msg.textContent = 'Not enough data for ' + ticker + '.';
+        msg.style.color = 'var(--red)';
+        return false;
+      }
+
+      // Add to data
+      const color = CRYPTO_COLORS[_colorIdx++ % CRYPTO_COLORS.length];
+      _data.assets[ticker] = {
+        name: ticker,
+        ticker: ticker + '-USD',
+        category: 'Cryptocurrency',
+        color: color,
+        inceptionDate: prices[0].date,
+        monthlyPrices: prices
+      };
+
+      // Cache in localStorage
+      try {
+        const cached = JSON.parse(localStorage.getItem('catchup-cached-assets') || '{}');
+        cached[ticker] = _data.assets[ticker];
+        localStorage.setItem('catchup-cached-assets', JSON.stringify(cached));
+      } catch(e) {}
+
+      return true;
+
+    } catch(e) {
+      msg.textContent = 'Network error fetching ' + ticker + '. Try again.';
+      msg.style.color = 'var(--red)';
+      return false;
+    }
+  }
+
+  function loadCachedAssets() {
+    try {
+      const cached = JSON.parse(localStorage.getItem('catchup-cached-assets') || '{}');
+      Object.keys(cached).forEach(key => {
+        if (!_data.assets[key]) {
+          _data.assets[key] = cached[key];
+        }
+      });
+    } catch(e) {}
+  }
+
+  async function addCustomTicker() {
     const input = document.getElementById('customTickerInput');
     const msg = document.getElementById('tickerMsg');
     const ticker = input.value.trim().toUpperCase();
@@ -1542,9 +1706,11 @@
     if (_activeAssets.includes(ticker)) {
       msg.textContent = ticker + ' is already displayed.';
       msg.style.color = 'var(--accent)';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
       return;
     }
 
+    // Check if it's in the static data already
     if (_data.assets[ticker]) {
       _activeAssets.push(ticker);
       if (!_settings.customTickers.includes(ticker)) {
@@ -1557,11 +1723,33 @@
       input.value = '';
       msg.textContent = ticker + ' added!';
       msg.style.color = 'var(--green)';
+      setTimeout(() => { msg.textContent = ''; }, 3000);
+      return;
+    }
+
+    // Try CoinGecko for crypto tokens
+    const coinId = COINGECKO_MAP[ticker];
+    if (coinId) {
+      const success = await fetchCoinGeckoData(ticker, coinId);
+      if (success) {
+        _activeAssets.push(ticker);
+        if (!_settings.customTickers.includes(ticker)) {
+          _settings.customTickers.push(ticker);
+        }
+        _settings.portfolioAllocations[ticker] = 0;
+        computeAllMetrics();
+        renderAll();
+        debounceSave();
+        input.value = '';
+        msg.textContent = ticker + ' added!';
+        msg.style.color = 'var(--green)';
+      }
     } else {
-      msg.textContent = ticker + ' is not in our database. Data updates monthly.';
+      // Try as a Yahoo Finance stock ticker
+      msg.textContent = ticker + ' not found. Try a crypto symbol (ETH, SOL, etc.) or a stock ticker already in our data.';
       msg.style.color = 'var(--red)';
     }
-    setTimeout(() => { msg.textContent = ''; }, 4000);
+    setTimeout(() => { msg.textContent = ''; }, 5000);
   }
 
   function debounceSave() {
