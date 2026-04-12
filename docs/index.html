@@ -550,12 +550,12 @@
       <div class="input-wrapper">
         <input type="number" id="inputReturn" min="5" max="100" step="1" value="22" placeholder="22">
       </div>
-      <span style="font-size:11px;color:var(--muted)">% per year (from Atlas)</span>
+      <span style="font-size:11px;color:var(--muted)">% per year. Ask Atlas if you're not sure.</span>
     </div>
     <div class="input-group">
       <label>Investment Timeline</label>
       <div class="input-wrapper">
-        <input type="number" id="inputTimeline" min="1" max="30" step="1" value="12" placeholder="12">
+        <input type="number" id="inputTimeline" min="1" max="30" step="1" value="15" placeholder="15">
       </div>
       <span style="font-size:11px;color:var(--muted)">Years to retirement</span>
     </div>
@@ -674,7 +674,7 @@
   let _data = null;
   let _settings = {
     requiredReturn: 22,
-    timeline: 12,
+    timeline: 15,
     monthlyBudget: 500,
     activeTab: 'overview',
     compareTimeframe: 10,
