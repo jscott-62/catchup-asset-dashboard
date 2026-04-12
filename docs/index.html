@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Great Catch-Up: Asset Comparison Dashboard</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #f59e0b;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+    --purple: #a855f7;
+    --cyan: #06b6d4;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 24px;
+    padding-bottom: 80px;
+    min-height: 100vh;
+  }
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  /* ===== HEADER ===== */
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  .header .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 4px;
+  }
+  .header .data-date {
+    color: var(--muted);
+    font-size: 13px;
+    text-align: right;
+  }
+
+  /* ===== USER INPUT PANEL ===== */
+  .input-panel {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    display: flex;
+    gap: 24px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+  }
+  .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+    min-width: 180px;
+  }
+  .input-group label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .input-group input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 16px;
+    font-weight: 600;
+    width: 100%;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .input-group input:focus {
+    border-color: var(--accent);
+  }
+  .input-group .unit {
+    font-size: 14px;
+    color: var(--muted);
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+  .input-wrapper {
+    position: relative;
+  }
+  .your-numbers {
+    flex: 2;
+    min-width: 300px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 14px;
+    color: var(--accent);
+    line-height: 1.5;
+  }
+  .your-numbers strong { font-weight: 700; }
+
+  /* ===== TABS ===== */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    padding: 12px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+  }
+  .tab-btn:hover { color: var(--text); }
+  .tab-btn.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card h2 {
+    font-size: 18px;
+    margin-bottom: 16px;
+    color: var(--accent);
+  }
+  .card h3 {
+    font-size: 15px;
+    color: var(--text);
+    margin-bottom: 8px;
+  }
+
+  /* ===== ASSET CARDS GRID ===== */
+  .asset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+  .asset-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    transition: border-color 0.2s;
+  }
+  .asset-card:hover { border-color: var(--accent); }
+  .asset-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 16px;
+  }
+  .asset-name {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .asset-ticker {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .asset-category {
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .asset-price {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .asset-price-date {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  /* ===== METRICS TABLE ===== */
+  .metrics-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+  }
+  .metrics-table th {
+    text-align: left;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .metrics-table td {
+    padding: 8px 0;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  }
+  .metrics-table td:last-child { text-align: right; font-weight: 600; }
+  .positive { color: var(--green); }
+  .negative { color: var(--red); }
+
+  /* ===== FIT SCORE ===== */
+  .fit-score-container {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .fit-score-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .fit-score-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+  .fit-score-grade {
+    font-size: 20px;
+    font-weight: 800;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+  }
+  .fit-score-bar {
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .fit-score-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+  .fit-score-summary {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+
+  /* Grade colors */
+  .grade-a { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+  .grade-b { background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+  .grade-c { background: rgba(245, 158, 11, 0.15); color: var(--accent); }
+  .grade-d { background: rgba(239, 68, 68, 0.15); color: var(--red); }
+  .grade-f { background: rgba(148, 163, 184, 0.15); color: var(--muted); }
+
+  /* ===== CHARTS ===== */
+  .chart-container {
+    margin-bottom: 24px;
+  }
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+  .chart-title {
+    font-size: 16px;
+    font-weight: 600;
+  }
+  .timeframe-btns {
+    display: flex;
+    gap: 4px;
+  }
+  .timeframe-btn {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .timeframe-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  canvas {
+    width: 100%;
+    height: 350px;
+    border-radius: 8px;
+    background: var(--bg);
+  }
+  #growthChart { height: 400px; }
+  #drawdownChart { height: 300px; }
+
+  /* ===== DCA TABLE ===== */
+  .dca-table-wrap { overflow-x: auto; }
+  .dca-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 700px;
+  }
+  .dca-table th {
+    text-align: left;
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 12px;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .dca-table td {
+    padding: 12px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  }
+  .dca-table tr:nth-child(even) td { background: rgba(15, 23, 42, 0.3); }
+  .dca-table .asset-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .dca-period-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-top: 24px;
+    margin-bottom: 12px;
+  }
+  .dca-period-header:first-child { margin-top: 0; }
+
+  /* ===== PORTFOLIO BUILDER ===== */
+  .portfolio-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .slider-group {
+    margin-bottom: 16px;
+  }
+  .slider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+  }
+  .slider-name {
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .slider-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+  }
+  input[type="range"] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 8px;
+    background: var(--bg);
+    border-radius: 4px;
+    outline: none;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--bg);
+  }
+  .allocation-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: var(--bg);
+    border-radius: 8px;
+    margin-top: 16px;
+    font-weight: 600;
+  }
+  .allocation-ok { color: var(--green); }
+  .allocation-warn { color: var(--red); }
+  .blended-metrics {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .blended-metric {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .blended-metric .value {
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .blended-metric .label {
+    font-size: 12px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* ===== CUSTOM TICKER ===== */
+  .custom-ticker-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .custom-ticker-bar input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 14px;
+    width: 160px;
+    outline: none;
+  }
+  .custom-ticker-bar input:focus { border-color: var(--accent); }
+  .custom-ticker-bar button {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .custom-ticker-bar button:hover { opacity: 0.85; }
+  .custom-ticker-bar .hint {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .custom-ticker-msg {
+    font-size: 13px;
+    margin-left: 8px;
+  }
+
+  /* ===== DISCLAIMER ===== */
+  .disclaimer {
+    margin-top: 40px;
+    padding: 20px;
+    background: rgba(239, 68, 68, 0.05);
+    border: 1px solid rgba(239, 68, 68, 0.15);
+    border-radius: 12px;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .disclaimer strong { color: var(--red); }
+
+  /* ===== RESPONSIVE ===== */
+  @media (max-width: 1200px) {
+    .asset-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .portfolio-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 768px) {
+    body { padding: 16px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .header .data-date { text-align: left; }
+    .input-panel { flex-direction: column; gap: 16px; }
+    .input-group { min-width: 100%; }
+    .your-numbers { min-width: 100%; }
+    .asset-grid { grid-template-columns: 1fr; }
+    .portfolio-grid { grid-template-columns: 1fr; }
+    .custom-ticker-bar { flex-wrap: wrap; }
+  }
+  @media (max-width: 480px) {
+    body { padding: 12px; }
+    .header h1 { font-size: 20px; }
+    .asset-price { font-size: 22px; }
+    .tab-btn { padding: 10px 14px; font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div>
+      <h1>The Great Catch-Up: Asset Comparison</h1>
+      <div class="subtitle">Evaluate catch-up assets based on YOUR numbers</div>
+    </div>
+    <div class="data-date" id="dataDate">Data as of: Loading...</div>
+  </div>
+
+  <!-- USER INPUT PANEL -->
+  <div class="input-panel">
+    <div class="input-group">
+      <label>Required Return Rate</label>
+      <div class="input-wrapper">
+        <input type="number" id="inputReturn" min="5" max="100" step="1" value="22" placeholder="22">
+      </div>
+      <span style="font-size:11px;color:var(--muted)">% per year (from Atlas)</span>
+    </div>
+    <div class="input-group">
+      <label>Investment Timeline</label>
+      <div class="input-wrapper">
+        <input type="number" id="inputTimeline" min="1" max="30" step="1" value="12" placeholder="12">
+      </div>
+      <span style="font-size:11px;color:var(--muted)">Years to retirement</span>
+    </div>
+    <div class="input-group">
+      <label>Monthly Budget</label>
+      <div class="input-wrapper">
+        <input type="number" id="inputBudget" min="50" max="50000" step="50" value="500" placeholder="500">
+      </div>
+      <span style="font-size:11px;color:var(--muted)">$ per month to invest</span>
+    </div>
+    <div class="your-numbers" id="yourNumbers">
+      You need <strong>22%</strong> annually over <strong>12 years</strong>, investing <strong>$500/mo</strong>
+    </div>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="overview">Overview</button>
+    <button class="tab-btn" data-tab="compare">Compare</button>
+    <button class="tab-btn" data-tab="dca">DCA Simulator</button>
+    <button class="tab-btn" data-tab="portfolio">Portfolio Builder</button>
+  </div>
+
+  <!-- TAB: OVERVIEW -->
+  <div class="tab-content active" id="tab-overview">
+    <div class="custom-ticker-bar">
+      <input type="text" id="customTickerInput" placeholder="Enter ticker..." maxlength="10">
+      <button id="addTickerBtn">+ Add Asset</button>
+      <span class="hint">Add any stock or ETF already in the database</span>
+      <span class="custom-ticker-msg" id="tickerMsg"></span>
+    </div>
+    <div class="asset-grid" id="assetGrid"></div>
+  </div>
+
+  <!-- TAB: COMPARE -->
+  <div class="tab-content" id="tab-compare">
+    <div class="card chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Annualized Returns Comparison</span>
+        <div class="timeframe-btns">
+          <button class="timeframe-btn" data-years="1">1Y</button>
+          <button class="timeframe-btn" data-years="3">3Y</button>
+          <button class="timeframe-btn" data-years="5">5Y</button>
+          <button class="timeframe-btn active" data-years="10">10Y</button>
+        </div>
+      </div>
+      <canvas id="returnsChart" height="350"></canvas>
+    </div>
+    <div class="card chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Growth of $10,000</span>
+      </div>
+      <canvas id="growthChart" height="400"></canvas>
+    </div>
+    <div class="card chart-container">
+      <div class="chart-header">
+        <span class="chart-title">Maximum Drawdown (Worst Peak-to-Trough Decline)</span>
+      </div>
+      <canvas id="drawdownChart" height="300"></canvas>
+    </div>
+  </div>
+
+  <!-- TAB: DCA SIMULATOR -->
+  <div class="tab-content" id="tab-dca">
+    <div class="card">
+      <h2>Dollar-Cost Averaging Simulator</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
+        What if you had invested <strong id="dcaBudgetDisplay">$500</strong>/month consistently? Here's what historical DCA would have produced.
+      </p>
+      <div id="dcaResults"></div>
+    </div>
+  </div>
+
+  <!-- TAB: PORTFOLIO BUILDER -->
+  <div class="tab-content" id="tab-portfolio">
+    <div class="card">
+      <h2>Portfolio Builder</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
+        Drag the sliders to build your target allocation. See how blending assets affects your expected return and Catch-Up Fit Score.
+      </p>
+      <div class="portfolio-grid">
+        <div>
+          <div id="portfolioSliders"></div>
+          <div class="allocation-total" id="allocationTotal">
+            <span>Total Allocation</span>
+            <span class="allocation-ok">100%</span>
+          </div>
+        </div>
+        <div class="blended-metrics" id="blendedMetrics"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <strong>Important Disclaimer:</strong> This tool is for educational purposes only. It is not financial advice.
+    Past performance does not guarantee future results. All data shown is historical and should not be used as the sole basis
+    for investment decisions. The Catch-Up Fit Score is an educational metric, not a recommendation.
+    Always consult with a qualified financial professional before making investment decisions.
+    <br><br>
+    Built for The Great Catch-Up program by J. Scott MacMillan.
+  </div>
+
+</div>
+
+<script src="asset-data.js"></script>
+<script>
+// ============================================================
+// CATCH-UP ASSET COMPARISON DASHBOARD
+// ============================================================
+
+(function() {
+  'use strict';
+
+  // --- State ---
+  let _data = null;
+  let _settings = {
+    requiredReturn: 22,
+    timeline: 12,
+    monthlyBudget: 500,
+    activeTab: 'overview',
+    compareTimeframe: 10,
+    portfolioAllocations: {},
+    customTickers: []
+  };
+  let _assetMetrics = {};
+  let _activeAssets = [];
+  let _debounceTimer = null;
+
+  // --- Data Loading ---
+  function loadData() {
+    if (window.ASSET_DATA) {
+      _data = window.ASSET_DATA;
+    } else {
+      // Fallback: fetch JSON
+      fetch('asset-data.json')
+        .then(r => r.json())
+        .then(d => { _data = d; init(); })
+        .catch(e => console.error('Failed to load asset data:', e));
+      return;
+    }
+    init();
+  }
+
+  function init() {
+    loadSettings();
+    populateInputs();
+    computeAllMetrics();
+    renderAll();
+    bindEvents();
+  }
+
+  // --- Settings (localStorage) ---
+  function loadSettings() {
+    try {
+      const saved = localStorage.getItem('catchup-dashboard-settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        Object.assign(_settings, parsed);
+      }
+    } catch(e) {}
+
+    // Determine active assets: defaults + any custom
+    _activeAssets = Object.keys(_data.assets);
+    if (_settings.customTickers && _settings.customTickers.length) {
+      _settings.customTickers.forEach(t => {
+        if (_data.assets[t] && !_activeAssets.includes(t)) {
+          _activeAssets.push(t);
+        }
+      });
+    }
+
+    // Ensure portfolio allocations exist for all active assets
+    const defaultPct = Math.floor(100 / _activeAssets.length);
+    _activeAssets.forEach((key, i) => {
+      if (_settings.portfolioAllocations[key] === undefined) {
+        _settings.portfolioAllocations[key] = i === 0 ? 100 - defaultPct * (_activeAssets.length - 1) : defaultPct;
+      }
+    });
+  }
+
+  function saveSettings() {
+    try {
+      _settings._savedAt = new Date().toISOString();
+      localStorage.setItem('catchup-dashboard-settings', JSON.stringify(_settings));
+    } catch(e) {}
+  }
+
+  function populateInputs() {
+    document.getElementById('inputReturn').value = _settings.requiredReturn;
+    document.getElementById('inputTimeline').value = _settings.timeline;
+    document.getElementById('inputBudget').value = _settings.monthlyBudget;
+  }
+
+  // --- Financial Calculations ---
+  function calcAnnualizedReturn(prices, years) {
+    if (!prices || prices.length < 2) return null;
+    const months = years * 12;
+    const startIdx = Math.max(0, prices.length - months - 1);
+    const endIdx = prices.length - 1;
+    if (startIdx >= endIdx) return null;
+    const startPrice = prices[startIdx].close;
+    const endPrice = prices[endIdx].close;
+    if (startPrice <= 0) return null;
+    const actualYears = (endIdx - startIdx) / 12;
+    return (Math.pow(endPrice / startPrice, 1 / actualYears) - 1) * 100;
+  }
+
+  function calcVolatility(prices) {
+    if (!prices || prices.length < 24) return null;
+    // Calculate annual returns for each 12-month period
+    const annualReturns = [];
+    for (let i = 12; i < prices.length; i += 12) {
+      const ret = (prices[i].close / prices[i - 12].close - 1) * 100;
+      annualReturns.push(ret);
+    }
+    if (annualReturns.length < 2) return null;
+    const mean = annualReturns.reduce((a, b) => a + b, 0) / annualReturns.length;
+    const variance = annualReturns.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / (annualReturns.length - 1);
+    return Math.sqrt(variance);
+  }
+
+  function calcMaxDrawdown(prices) {
+    if (!prices || prices.length < 2) return { drawdown: 0, peakDate: '', troughDate: '', recoveryMonths: null };
+    let peak = prices[0].close;
+    let peakDate = prices[0].date;
+    let maxDD = 0;
+    let ddPeakDate = '';
+    let ddTroughDate = '';
+    let troughIdx = 0;
+
+    for (let i = 1; i < prices.length; i++) {
+      if (prices[i].close > peak) {
+        peak = prices[i].close;
+        peakDate = prices[i].date;
+      }
+      const dd = (prices[i].close - peak) / peak;
+      if (dd < maxDD) {
+        maxDD = dd;
+        ddPeakDate = peakDate;
+        ddTroughDate = prices[i].date;
+        troughIdx = i;
+      }
+    }
+
+    // Find recovery
+    let recoveryMonths = null;
+    const peakAtDrawdown = peak;
+    for (let i = troughIdx + 1; i < prices.length; i++) {
+      if (prices[i].close >= peakAtDrawdown) {
+        recoveryMonths = i - troughIdx;
+        break;
+      }
+    }
+
+    return {
+      drawdown: maxDD * 100,
+      peakDate: ddPeakDate,
+      troughDate: ddTroughDate,
+      recoveryMonths: recoveryMonths
+    };
+  }
+
+  function calcBestWorstYear(prices) {
+    if (!prices || prices.length < 13) return { best: null, worst: null };
+    const yearReturns = [];
+    for (let i = 12; i < prices.length; i += 12) {
+      const end = Math.min(i + 11, prices.length - 1);
+      const ret = (prices[i].close / prices[i - 12].close - 1) * 100;
+      const year = prices[i].date.substring(0, 4);
+      yearReturns.push({ year, ret });
+    }
+    // Also calculate partial rolling years
+    for (let i = 12; i < prices.length; i++) {
+      const ret = (prices[i].close / prices[i - 12].close - 1) * 100;
+      const year = prices[i].date.substring(0, 7);
+      yearReturns.push({ year, ret });
+    }
+    if (yearReturns.length === 0) return { best: null, worst: null };
+    yearReturns.sort((a, b) => b.ret - a.ret);
+    return {
+      best: yearReturns[0],
+      worst: yearReturns[yearReturns.length - 1]
+    };
+  }
+
+  function calcDCA(prices, monthlyAmount, months) {
+    if (!prices || prices.length < 2) return null;
+    const startIdx = Math.max(0, prices.length - months);
+    let totalUnits = 0;
+    let totalInvested = 0;
+    const actualMonths = prices.length - startIdx;
+
+    for (let i = startIdx; i < prices.length; i++) {
+      const units = monthlyAmount / prices[i].close;
+      totalUnits += units;
+      totalInvested += monthlyAmount;
+    }
+
+    const endingValue = totalUnits * prices[prices.length - 1].close;
+    const totalGain = endingValue - totalInvested;
+    const gainPct = (totalGain / totalInvested) * 100;
+    const years = actualMonths / 12;
+    const annReturn = years > 0 ? (Math.pow(endingValue / totalInvested, 1 / years) - 1) * 100 : 0;
+
+    return {
+      totalInvested,
+      endingValue,
+      totalGain,
+      gainPct,
+      annualizedReturn: annReturn,
+      months: actualMonths
+    };
+  }
+
+  function calcCatchUpFitScore(avgReturn, volatility, requiredReturn, timeline) {
+    // Return Score (60%): How well does the return match what's needed?
+    // Assets that exceed the required return get bonus points (up to 120)
+    let returnScore;
+    if (avgReturn >= requiredReturn) {
+      returnScore = 100 + Math.min(20, (avgReturn - requiredReturn) / requiredReturn * 40);
+    } else {
+      returnScore = Math.max(0, (avgReturn / Math.max(requiredReturn, 1)) * 100);
+    }
+    returnScore = Math.min(120, returnScore);
+
+    // Volatility Score (25%): Penalize volatility, but less harshly for longer timelines
+    const timelineFactor = Math.min(1, timeline / 15);
+    const volPenalty = (volatility || 0) * (1 - timelineFactor * 0.6);
+    const volatilityScore = Math.max(0, 100 - volPenalty * 1.2);
+
+    // Consistency Score (15%): return-to-volatility ratio (reward efficient returns)
+    const consistencyScore = volatility > 0
+      ? Math.min(100, (avgReturn / volatility) * 60 + 40)
+      : avgReturn > 0 ? 80 : 20;
+
+    const score = returnScore * 0.6 + volatilityScore * 0.25 + consistencyScore * 0.15;
+    return Math.max(0, Math.min(100, score));
+  }
+
+  function getGrade(score) {
+    if (score >= 80) return { letter: 'A', class: 'grade-a', label: 'Strong Catch-Up Fit', color: 'var(--green)' };
+    if (score >= 60) return { letter: 'B', class: 'grade-b', label: 'Moderate Catch-Up Fit', color: 'var(--blue)' };
+    if (score >= 40) return { letter: 'C', class: 'grade-c', label: 'Possible Catch-Up Fit', color: 'var(--accent)' };
+    if (score >= 20) return { letter: 'D', class: 'grade-d', label: 'Weak Catch-Up Fit', color: 'var(--red)' };
+    return { letter: 'F', class: 'grade-f', label: 'Poor Catch-Up Fit', color: 'var(--muted)' };
+  }
+
+  function computeAllMetrics() {
+    _assetMetrics = {};
+    _activeAssets.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset) return;
+      const prices = asset.monthlyPrices;
+      const ret10 = calcAnnualizedReturn(prices, 10);
+      const ret5 = calcAnnualizedReturn(prices, 5);
+      const ret3 = calcAnnualizedReturn(prices, 3);
+      const ret1 = calcAnnualizedReturn(prices, 1);
+      const vol = calcVolatility(prices);
+      const dd = calcMaxDrawdown(prices);
+      const bw = calcBestWorstYear(prices);
+      const avgReturn = ret10 || ret5 || ret3 || 0;
+      const fitScore = calcCatchUpFitScore(avgReturn, vol || 0, _settings.requiredReturn, _settings.timeline);
+
+      _assetMetrics[key] = {
+        currentPrice: prices[prices.length - 1].close,
+        priceDate: prices[prices.length - 1].date,
+        returns: { '1': ret1, '3': ret3, '5': ret5, '10': ret10 },
+        volatility: vol,
+        maxDrawdown: dd,
+        bestWorst: bw,
+        avgReturn,
+        fitScore,
+        grade: getGrade(fitScore)
+      };
+    });
+  }
+
+  // --- Rendering ---
+  function renderAll() {
+    renderHeader();
+    renderYourNumbers();
+    renderAssetCards();
+    // Only render charts if compare tab is visible (canvas needs dimensions)
+    if (_settings.activeTab === 'compare') {
+      setTimeout(renderCompareCharts, 100);
+    }
+    renderDCA();
+    renderPortfolio();
+  }
+
+  function renderHeader() {
+    document.getElementById('dataDate').textContent = 'Data as of: ' + (_data.lastUpdated || 'Unknown');
+  }
+
+  function renderYourNumbers() {
+    const el = document.getElementById('yourNumbers');
+    el.innerHTML = `You need <strong>${_settings.requiredReturn}%</strong> annually over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong>`;
+  }
+
+  function renderAssetCards() {
+    const grid = document.getElementById('assetGrid');
+    grid.innerHTML = '';
+
+    _activeAssets.forEach(key => {
+      const asset = _data.assets[key];
+      const m = _assetMetrics[key];
+      if (!asset || !m) return;
+
+      const card = document.createElement('div');
+      card.className = 'asset-card';
+
+      const catColors = {
+        'Cryptocurrency': 'var(--accent)',
+        'Commodity': '#eab308',
+        'Index Fund': 'var(--blue)',
+        'Tech Index': 'var(--purple)',
+        'Disruptive Tech ETF': 'var(--green)',
+        'Individual Stock': 'var(--red)',
+        'Custom': 'var(--cyan)'
+      };
+      const catColor = catColors[asset.category] || 'var(--muted)';
+
+      card.innerHTML = `
+        <div class="asset-header">
+          <div>
+            <div class="asset-name" style="color:${asset.color}">${asset.name}</div>
+            <div class="asset-ticker">${asset.ticker}</div>
+          </div>
+          <span class="asset-category" style="background:${catColor}20;color:${catColor}">${asset.category}</span>
+        </div>
+        <div class="asset-price">$${formatNum(m.currentPrice)}</div>
+        <div class="asset-price-date">as of ${m.priceDate}</div>
+        <table class="metrics-table">
+          <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
+          <tr><td>1-Year Return</td><td>${fmtReturn(m.returns['1'])}</td></tr>
+          <tr><td>3-Year Return (ann.)</td><td>${fmtReturn(m.returns['3'])}</td></tr>
+          <tr><td>5-Year Return (ann.)</td><td>${fmtReturn(m.returns['5'])}</td></tr>
+          <tr><td>10-Year Return (ann.)</td><td>${fmtReturn(m.returns['10'])}</td></tr>
+          <tr><td>Volatility (Std Dev)</td><td>${m.volatility !== null ? m.volatility.toFixed(1) + '%' : 'N/A'}</td></tr>
+          <tr><td>Max Drawdown</td><td class="negative">${m.maxDrawdown.drawdown.toFixed(1)}%</td></tr>
+          <tr><td>Recovery Time</td><td>${m.maxDrawdown.recoveryMonths !== null ? m.maxDrawdown.recoveryMonths + ' months' : 'Not recovered'}</td></tr>
+          <tr><td>Best 12-Month</td><td>${m.bestWorst.best ? '<span class="positive">+' + m.bestWorst.best.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
+          <tr><td>Worst 12-Month</td><td>${m.bestWorst.worst ? '<span class="negative">' + m.bestWorst.worst.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
+        </table>
+        <div class="fit-score-container">
+          <div class="fit-score-header">
+            <span class="fit-score-label">Catch-Up Fit Score</span>
+            <div class="fit-score-grade ${m.grade.class}">${m.grade.letter}</div>
+          </div>
+          <div class="fit-score-bar">
+            <div class="fit-score-fill" style="width:${m.fitScore}%;background:${m.grade.color}"></div>
+          </div>
+          <div class="fit-score-summary">
+            ${asset.name} has averaged <strong>${m.avgReturn.toFixed(1)}%</strong> annually
+            ${m.volatility !== null ? ' with <strong>' + m.volatility.toFixed(0) + '%</strong> volatility' : ''}.
+            Your required return is <strong>${_settings.requiredReturn}%</strong>.
+            <strong>${m.grade.label}.</strong>
+            ${m.fitScore < 40 && _settings.timeline < 8 ? '<br><em style="color:var(--red)">Warning: High volatility with your ' + _settings.timeline + '-year timeline means significant risk.</em>' : ''}
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // --- Charts (Pure Canvas) ---
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * dpr;
+    canvas.height = rect.height * dpr;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(dpr, dpr);
+    return { ctx, w: rect.width, h: rect.height };
+  }
+
+  function renderCompareCharts() {
+    renderReturnsChart();
+    renderGrowthChart();
+    renderDrawdownChart();
+  }
+
+  function renderReturnsChart() {
+    const canvas = document.getElementById('returnsChart');
+    if (!canvas) return;
+    const { ctx, w, h } = setupCanvas(canvas);
+    const years = _settings.compareTimeframe || 10;
+
+    const assets = _activeAssets.filter(k => _assetMetrics[k] && _assetMetrics[k].returns[String(years)] !== null);
+    const values = assets.map(k => _assetMetrics[k].returns[String(years)] || 0);
+
+    if (assets.length === 0) return;
+
+    // Layout
+    const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+    const plotW = w - margin.left - margin.right;
+    const plotH = h - margin.top - margin.bottom;
+
+    const maxVal = Math.max(...values, 0) * 1.1;
+    const minVal = Math.min(...values, 0) * 1.1;
+    const range = maxVal - minVal || 1;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Grid lines
+    const gridSteps = 5;
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 0.5;
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'right';
+
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = minVal + (range / gridSteps) * i;
+      const y = margin.top + plotH - (plotH * (val - minVal) / range);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(w - margin.right, y);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(0) + '%', margin.left - 8, y + 4);
+    }
+
+    // Zero line
+    if (minVal < 0) {
+      const zeroY = margin.top + plotH - (plotH * (0 - minVal) / range);
+      ctx.strokeStyle = '#94a3b8';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(margin.left, zeroY);
+      ctx.lineTo(w - margin.right, zeroY);
+      ctx.stroke();
+    }
+
+    // Bars
+    const barWidth = Math.min(60, plotW / assets.length * 0.7);
+    const gap = (plotW - barWidth * assets.length) / (assets.length + 1);
+
+    assets.forEach((key, i) => {
+      const val = values[i];
+      const asset = _data.assets[key];
+      const x = margin.left + gap + i * (barWidth + gap);
+      const zeroY = margin.top + plotH - (plotH * (0 - minVal) / range);
+      const valY = margin.top + plotH - (plotH * (val - minVal) / range);
+
+      ctx.fillStyle = asset.color;
+      if (val >= 0) {
+        ctx.fillRect(x, valY, barWidth, zeroY - valY);
+      } else {
+        ctx.fillRect(x, zeroY, barWidth, valY - zeroY);
+      }
+
+      // Value label
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px -apple-system, sans-serif';
+      ctx.fillText(val.toFixed(1) + '%', x + barWidth / 2, val >= 0 ? valY - 8 : valY + 16);
+
+      // Ticker label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.fillText(key, x + barWidth / 2, h - margin.bottom + 20);
+    });
+
+    // Required return line
+    const reqY = margin.top + plotH - (plotH * (_settings.requiredReturn - minVal) / range);
+    if (reqY > margin.top && reqY < margin.top + plotH) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, reqY);
+      ctx.lineTo(w - margin.right, reqY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f59e0b';
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      ctx.fillText('Your Required: ' + _settings.requiredReturn + '%', margin.left + 8, reqY - 8);
+    }
+  }
+
+  function renderGrowthChart() {
+    const canvas = document.getElementById('growthChart');
+    if (!canvas) return;
+    const { ctx, w, h } = setupCanvas(canvas);
+
+    const margin = { top: 30, right: 30, bottom: 50, left: 80 };
+    const plotW = w - margin.left - margin.right;
+    const plotH = h - margin.top - margin.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    // Calculate growth of $10,000 for each asset
+    const datasets = [];
+    let globalMax = 10000;
+    let globalMin = 10000;
+    let maxLen = 0;
+
+    _activeAssets.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset) return;
+      const prices = asset.monthlyPrices;
+      const startPrice = prices[0].close;
+      const points = prices.map((p, i) => {
+        const val = (p.close / startPrice) * 10000;
+        if (val > globalMax) globalMax = val;
+        if (val < globalMin) globalMin = val;
+        return val;
+      });
+      if (points.length > maxLen) maxLen = points.length;
+      datasets.push({ key, color: asset.color, points, dates: prices.map(p => p.date) });
+    });
+
+    if (datasets.length === 0) return;
+
+    // Grid
+    const gridSteps = 5;
+    const range = globalMax - Math.min(globalMin, 0);
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 0.5;
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'right';
+
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = globalMin + (range / gridSteps) * i;
+      const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(w - margin.right, y);
+      ctx.stroke();
+      ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
+    }
+
+    // Draw lines
+    datasets.forEach(ds => {
+      ctx.strokeStyle = ds.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ds.points.forEach((val, i) => {
+        const x = margin.left + (plotW * i / (maxLen - 1));
+        const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+
+      // Label at end
+      const lastVal = ds.points[ds.points.length - 1];
+      const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
+      const lastY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
+      ctx.fillStyle = ds.color;
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, lastY + 4);
+    });
+
+    // X-axis year labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.font = '11px -apple-system, sans-serif';
+    const firstDates = datasets[0] ? datasets[0].dates : [];
+    const yearsShown = new Set();
+    firstDates.forEach((date, i) => {
+      const year = date.substring(0, 4);
+      if (!yearsShown.has(year)) {
+        yearsShown.add(year);
+        const x = margin.left + (plotW * i / (maxLen - 1));
+        ctx.fillText(year, x, h - margin.bottom + 18);
+      }
+    });
+
+    // Starting value line
+    const startY = margin.top + plotH - (plotH * (10000 - globalMin) / range);
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath();
+    ctx.moveTo(margin.left, startY);
+    ctx.lineTo(w - margin.right, startY);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function renderDrawdownChart() {
+    const canvas = document.getElementById('drawdownChart');
+    if (!canvas) return;
+    const { ctx, w, h } = setupCanvas(canvas);
+
+    const margin = { top: 30, right: 30, bottom: 50, left: 70 };
+    const plotW = w - margin.left - margin.right;
+    const plotH = h - margin.top - margin.bottom;
+
+    const assets = _activeAssets.filter(k => _assetMetrics[k]);
+    const values = assets.map(k => _assetMetrics[k].maxDrawdown.drawdown);
+
+    ctx.clearRect(0, 0, w, h);
+
+    const minVal = Math.min(...values) * 1.1;
+
+    // Grid
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 0.5;
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'right';
+
+    for (let i = 0; i <= 5; i++) {
+      const val = (minVal / 5) * i;
+      const y = margin.top + (plotH * i / 5);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(w - margin.right, y);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(0) + '%', margin.left - 8, y + 4);
+    }
+
+    // Bars (negative direction)
+    const barWidth = Math.min(60, plotW / assets.length * 0.7);
+    const gap = (plotW - barWidth * assets.length) / (assets.length + 1);
+
+    assets.forEach((key, i) => {
+      const val = values[i];
+      const asset = _data.assets[key];
+      const x = margin.left + gap + i * (barWidth + gap);
+      const barH = plotH * (Math.abs(val) / Math.abs(minVal));
+
+      ctx.fillStyle = asset.color + '99';
+      ctx.fillRect(x, margin.top, barWidth, barH);
+
+      // Value label
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px -apple-system, sans-serif';
+      ctx.fillText(val.toFixed(1) + '%', x + barWidth / 2, margin.top + barH + 18);
+
+      // Ticker label
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px -apple-system, sans-serif';
+      ctx.fillText(key, x + barWidth / 2, h - margin.bottom + 20);
+    });
+  }
+
+  // --- DCA Rendering ---
+  function renderDCA() {
+    const container = document.getElementById('dcaResults');
+    const budget = _settings.monthlyBudget;
+    document.getElementById('dcaBudgetDisplay').textContent = '$' + budget.toLocaleString();
+
+    let html = '';
+    [{ label: 'Last 5 Years (60 months)', months: 60 }, { label: 'Last 10 Years (120 months)', months: 120 }].forEach(period => {
+      html += `<div class="dca-period-header">${period.label}</div>`;
+      html += '<div class="dca-table-wrap"><table class="dca-table">';
+      html += '<thead><tr><th>Asset</th><th>Total Invested</th><th>Ending Value</th><th>Gain/Loss</th><th>Return %</th><th>Ann. Return</th></tr></thead><tbody>';
+
+      _activeAssets.forEach(key => {
+        const asset = _data.assets[key];
+        if (!asset) return;
+        const result = calcDCA(asset.monthlyPrices, budget, period.months);
+        if (!result) return;
+
+        const gainClass = result.totalGain >= 0 ? 'positive' : 'negative';
+        html += `<tr>
+          <td><span class="asset-dot" style="background:${asset.color}"></span>${asset.name}</td>
+          <td>$${formatNum(result.totalInvested)}</td>
+          <td style="font-weight:600">$${formatNum(result.endingValue)}</td>
+          <td class="${gainClass}" style="font-weight:600">${result.totalGain >= 0 ? '+' : ''}$${formatNum(result.totalGain)}</td>
+          <td class="${gainClass}">${result.gainPct >= 0 ? '+' : ''}${result.gainPct.toFixed(1)}%</td>
+          <td class="${gainClass}">${result.annualizedReturn.toFixed(1)}%</td>
+        </tr>`;
+      });
+
+      html += '</tbody></table></div>';
+    });
+
+    container.innerHTML = html;
+  }
+
+  // --- Portfolio Builder ---
+  function renderPortfolio() {
+    const slidersEl = document.getElementById('portfolioSliders');
+    const metricsEl = document.getElementById('blendedMetrics');
+
+    // Sliders
+    let slidersHtml = '';
+    _activeAssets.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset) return;
+      const pct = _settings.portfolioAllocations[key] || 0;
+      slidersHtml += `
+        <div class="slider-group">
+          <div class="slider-header">
+            <span class="slider-name">
+              <span class="asset-dot" style="background:${asset.color}"></span>
+              ${asset.name}
+            </span>
+            <span class="slider-value" id="slider-val-${key}">${pct}%</span>
+          </div>
+          <input type="range" min="0" max="100" value="${pct}" data-asset="${key}" class="portfolio-slider">
+        </div>
+      `;
+    });
+    slidersEl.innerHTML = slidersHtml;
+
+    // Bind slider events
+    document.querySelectorAll('.portfolio-slider').forEach(slider => {
+      slider.addEventListener('input', onSliderChange);
+    });
+
+    updatePortfolioMetrics();
+  }
+
+  function onSliderChange(e) {
+    const key = e.target.dataset.asset;
+    const val = parseInt(e.target.value);
+    _settings.portfolioAllocations[key] = val;
+    document.getElementById('slider-val-' + key).textContent = val + '%';
+    updatePortfolioMetrics();
+    debounceSave();
+  }
+
+  function updatePortfolioMetrics() {
+    const total = Object.values(_settings.portfolioAllocations).reduce((a, b) => a + b, 0);
+    const totalEl = document.getElementById('allocationTotal');
+    totalEl.innerHTML = `<span>Total Allocation</span><span class="${total === 100 ? 'allocation-ok' : 'allocation-warn'}">${total}%</span>`;
+
+    // Calculate blended metrics
+    let blendedReturn = 0;
+    let blendedVol = 0;
+    let totalWeight = 0;
+
+    _activeAssets.forEach(key => {
+      const pct = (_settings.portfolioAllocations[key] || 0) / 100;
+      const m = _assetMetrics[key];
+      if (!m || pct === 0) return;
+      blendedReturn += m.avgReturn * pct;
+      blendedVol += (m.volatility || 0) * pct;
+      totalWeight += pct;
+    });
+
+    if (totalWeight > 0 && totalWeight !== 1) {
+      blendedReturn /= totalWeight;
+      blendedVol /= totalWeight;
+    }
+
+    const blendedFit = calcCatchUpFitScore(blendedReturn, blendedVol, _settings.requiredReturn, _settings.timeline);
+    const grade = getGrade(blendedFit);
+
+    const metricsEl = document.getElementById('blendedMetrics');
+    metricsEl.innerHTML = `
+      <div class="blended-metric">
+        <div class="value" style="color:${blendedReturn >= _settings.requiredReturn ? 'var(--green)' : 'var(--accent)'}">${blendedReturn.toFixed(1)}%</div>
+        <div class="label">Blended Annual Return</div>
+      </div>
+      <div class="blended-metric">
+        <div class="value">${blendedVol.toFixed(1)}%</div>
+        <div class="label">Blended Volatility</div>
+      </div>
+      <div class="blended-metric">
+        <div class="value" style="color:${grade.color}">${grade.letter}</div>
+        <div class="label">Blended Catch-Up Fit</div>
+        <div style="font-size:13px;color:var(--muted);margin-top:8px">${grade.label}</div>
+      </div>
+      <div class="blended-metric">
+        <div class="value" style="color:${blendedReturn >= _settings.requiredReturn ? 'var(--green)' : 'var(--red)'}">
+          ${blendedReturn >= _settings.requiredReturn ? 'YES' : 'NO'}
+        </div>
+        <div class="label">Meets Your Required ${_settings.requiredReturn}%?</div>
+      </div>
+    `;
+  }
+
+  // --- Helpers ---
+  function formatNum(n) {
+    if (n === null || n === undefined) return 'N/A';
+    if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (Math.abs(n) >= 1000) return n.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    if (Math.abs(n) >= 1) return n.toFixed(2);
+    return n.toFixed(4);
+  }
+
+  function fmtReturn(val) {
+    if (val === null || val === undefined) return '<span style="color:var(--muted)">N/A</span>';
+    const cls = val >= 0 ? 'positive' : 'negative';
+    const prefix = val >= 0 ? '+' : '';
+    return `<span class="${cls}">${prefix}${val.toFixed(1)}%</span>`;
+  }
+
+  function escapeHtml(str) {
+    return str.replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // --- Event Binding ---
+  function bindEvents() {
+    // Tab switching
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        const tab = btn.dataset.tab;
+        document.getElementById('tab-' + tab).classList.add('active');
+        _settings.activeTab = tab;
+        debounceSave();
+
+        // Redraw charts when switching to compare tab
+        if (tab === 'compare') {
+          setTimeout(renderCompareCharts, 150);
+        }
+      });
+    });
+
+    // Timeframe buttons
+    document.querySelectorAll('.timeframe-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        _settings.compareTimeframe = parseInt(btn.dataset.years);
+        debounceSave();
+        renderReturnsChart();
+      });
+    });
+
+    // User inputs
+    ['inputReturn', 'inputTimeline', 'inputBudget'].forEach(id => {
+      document.getElementById(id).addEventListener('input', onInputChange);
+    });
+
+    // Custom ticker
+    document.getElementById('addTickerBtn').addEventListener('click', addCustomTicker);
+    document.getElementById('customTickerInput').addEventListener('keypress', e => {
+      if (e.key === 'Enter') addCustomTicker();
+    });
+
+    // Window resize: redraw charts
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(renderCompareCharts, 200);
+    });
+
+    // Restore active tab
+    if (_settings.activeTab !== 'overview') {
+      const btn = document.querySelector(`.tab-btn[data-tab="${_settings.activeTab}"]`);
+      if (btn) {
+        // Apply tab visibility first
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('tab-' + _settings.activeTab).classList.add('active');
+        // Then render charts after CSS takes effect
+        if (_settings.activeTab === 'compare') {
+          setTimeout(renderCompareCharts, 200);
+        }
+      }
+    }
+
+    // Restore timeframe
+    if (_settings.compareTimeframe) {
+      const tfBtn = document.querySelector(`.timeframe-btn[data-years="${_settings.compareTimeframe}"]`);
+      if (tfBtn) {
+        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+        tfBtn.classList.add('active');
+      }
+    }
+  }
+
+  function onInputChange() {
+    _settings.requiredReturn = parseFloat(document.getElementById('inputReturn').value) || 15;
+    _settings.timeline = parseInt(document.getElementById('inputTimeline').value) || 10;
+    _settings.monthlyBudget = parseFloat(document.getElementById('inputBudget').value) || 500;
+    computeAllMetrics();
+    renderAll();
+    debounceSave();
+  }
+
+  function addCustomTicker() {
+    const input = document.getElementById('customTickerInput');
+    const msg = document.getElementById('tickerMsg');
+    const ticker = input.value.trim().toUpperCase();
+
+    if (!ticker) return;
+
+    if (_activeAssets.includes(ticker)) {
+      msg.textContent = ticker + ' is already displayed.';
+      msg.style.color = 'var(--accent)';
+      return;
+    }
+
+    if (_data.assets[ticker]) {
+      _activeAssets.push(ticker);
+      if (!_settings.customTickers.includes(ticker)) {
+        _settings.customTickers.push(ticker);
+      }
+      _settings.portfolioAllocations[ticker] = 0;
+      computeAllMetrics();
+      renderAll();
+      debounceSave();
+      input.value = '';
+      msg.textContent = ticker + ' added!';
+      msg.style.color = 'var(--green)';
+    } else {
+      msg.textContent = ticker + ' is not in our database. Data updates monthly.';
+      msg.style.color = 'var(--red)';
+    }
+    setTimeout(() => { msg.textContent = ''; }, 4000);
+  }
+
+  function debounceSave() {
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(saveSettings, 300);
+  }
+
+  // --- Start ---
+  loadData();
+
+})();
+</script>
+</body>
+</html>
