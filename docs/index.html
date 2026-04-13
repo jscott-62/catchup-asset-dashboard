@@ -723,9 +723,8 @@
       <div class="chart-header">
         <span class="chart-title">DCA Growth: Your Monthly Investment Over Time</span>
       </div>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
-        What <strong id="dcaChartBudget">$500</strong>/month invested consistently would have grown to over 10 years.
-        This is how YOUR journey would actually look.
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;" id="dcaChartSubtitle">
+        What <strong>$500</strong>/month invested consistently would have grown to. This is how YOUR journey would actually look.
       </p>
       <canvas id="dcaGrowthChart" height="400"></canvas>
     </div>
@@ -1349,10 +1348,12 @@
     }
 
     const budget = _settings.monthlyBudget;
-    const budgetEl = document.getElementById('dcaChartBudget');
-    if (budgetEl) budgetEl.textContent = '$' + budget.toLocaleString();
+    const years = _settings.compareTimeframe || 10;
+    const months = years * 12;
+    const subtitleEl = document.getElementById('dcaChartSubtitle');
+    if (subtitleEl) subtitleEl.innerHTML = 'What <strong>$' + budget.toLocaleString() + '</strong>/month invested over the last <strong>' + years + ' year' + (years > 1 ? 's' : '') + '</strong> would have grown to. This is how YOUR journey would actually look.';
 
-    // Simulate DCA for each selected asset month by month
+    // Simulate DCA for each selected asset over the selected timeframe
     const datasets = [];
     let globalMax = 0;
     let maxLen = 0;
@@ -1360,7 +1361,9 @@
     selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset) return;
-      const prices = asset.monthlyPrices;
+      const allPrices = asset.monthlyPrices;
+      const startIdx = Math.max(0, allPrices.length - months);
+      const prices = allPrices.slice(startIdx);
       let totalUnits = 0;
       let totalInvested = 0;
       const points = [];
@@ -1494,7 +1497,8 @@
       return;
     }
 
-    // Calculate rolling 12-month returns for each asset
+    // Calculate rolling 12-month returns for selected timeframe
+    const years = _settings.compareTimeframe || 10;
     const datasets = [];
     let globalMax = -Infinity;
     let globalMin = Infinity;
@@ -1503,20 +1507,29 @@
     selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset || asset.monthlyPrices.length < 13) return;
-      const prices = asset.monthlyPrices;
+      const allPrices = asset.monthlyPrices;
       const points = [];
       const dates = [];
 
-      for (let i = 12; i < prices.length; i++) {
-        const ret = ((prices[i].close / prices[i - 12].close) - 1) * 100;
+      for (let i = 12; i < allPrices.length; i++) {
+        const ret = ((allPrices[i].close / allPrices[i - 12].close) - 1) * 100;
         points.push(ret);
-        dates.push(prices[i].date);
-        if (ret > globalMax) globalMax = ret;
-        if (ret < globalMin) globalMin = ret;
+        dates.push(allPrices[i].date);
       }
 
-      if (points.length > maxLen) maxLen = points.length;
-      datasets.push({ key, color: asset.color, points, dates });
+      // Trim to selected timeframe (years worth of rolling returns)
+      const keepMonths = years * 12;
+      const trimStart = Math.max(0, points.length - keepMonths);
+      const trimmedPoints = points.slice(trimStart);
+      const trimmedDates = dates.slice(trimStart);
+
+      trimmedPoints.forEach(r => {
+        if (r > globalMax) globalMax = r;
+        if (r < globalMin) globalMin = r;
+      });
+
+      if (trimmedPoints.length > maxLen) maxLen = trimmedPoints.length;
+      datasets.push({ key, color: asset.color, points: trimmedPoints, dates: trimmedDates });
     });
 
     if (datasets.length === 0) return;
@@ -1624,9 +1637,18 @@
     const plotW = w - margin.left - margin.right;
     const plotH = h - margin.top - margin.bottom;
 
+    const years = _settings.compareTimeframe || 10;
+    const months = years * 12;
     const selected = getSelectedAssets();
-    const assets = selected.filter(k => _assetMetrics[k]);
-    const values = assets.map(k => _assetMetrics[k].maxDrawdown.drawdown);
+    const assets = selected.filter(k => _assetMetrics[k] && _data.assets[k]);
+
+    // Calculate drawdown for selected timeframe
+    const values = assets.map(k => {
+      const allPrices = _data.assets[k].monthlyPrices;
+      const startIdx = Math.max(0, allPrices.length - months);
+      const prices = allPrices.slice(startIdx);
+      return calcMaxDrawdown(prices).drawdown;
+    });
 
     ctx.clearRect(0, 0, w, h);
 
@@ -1878,7 +1900,7 @@
         btn.classList.add('active');
         _settings.compareTimeframe = parseInt(btn.dataset.years);
         debounceSave();
-        renderReturnsChart();
+        renderCompareCharts();
       });
     });
 
