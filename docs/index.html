@@ -1214,6 +1214,62 @@
     return { ctx, w: rect.width, h: rect.height };
   }
 
+  // Shared helper: draw end-of-line labels with guaranteed spacing
+  function drawEndLabels(ctx, labels, lineEndX, margin) {
+    // labels = [{y: natural Y, text: 'BTC $148K', color: '#f59e0b'}, ...]
+    // Sort by natural Y position (top to bottom)
+    labels.sort((a, b) => a.y - b.y);
+
+    // Force minimum gap of 18px between labels
+    const minGap = 18;
+    const topBound = margin.top + 5;
+    const bottomBound = margin.top + (labels.length > 0 ? 600 : 400); // stay within chart
+
+    for (let i = 1; i < labels.length; i++) {
+      if (labels[i].y - labels[i - 1].y < minGap) {
+        labels[i].y = labels[i - 1].y + minGap;
+      }
+    }
+
+    // If labels overflow the bottom, push everything up
+    if (labels.length > 0) {
+      const lastLabel = labels[labels.length - 1];
+      if (lastLabel.y > bottomBound) {
+        const overflow = lastLabel.y - bottomBound;
+        labels.forEach(l => l.y -= overflow);
+      }
+      // Make sure first label isn't above top
+      if (labels[0].y < topBound) {
+        const shift = topBound - labels[0].y;
+        labels.forEach(l => l.y += shift);
+      }
+    }
+
+    // Draw each label with background pill and leader line
+    labels.forEach(l => {
+      // Small leader line from data point to label
+      ctx.strokeStyle = l.color;
+      ctx.lineWidth = 0.5;
+      ctx.globalAlpha = 0.4;
+      ctx.beginPath();
+      ctx.moveTo(lineEndX, l.naturalY);
+      ctx.lineTo(lineEndX + 4, l.y);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Background pill
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      const textW = ctx.measureText(l.text).width;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.fillRect(lineEndX + 5, l.y - 10, textW + 8, 17);
+
+      // Text
+      ctx.fillStyle = l.color;
+      ctx.textAlign = 'left';
+      ctx.fillText(l.text, lineEndX + 9, l.y + 3);
+    });
+  }
+
   function renderCompareCharts() {
     renderReturnsChart();
     renderDCAGrowthChart();
@@ -1436,11 +1492,11 @@
     ctx.font = 'bold 12px -apple-system, sans-serif';
     ctx.fillText('Invested $' + formatNum(maxInvested), invLastX + 6, invLastY + 4);
 
-    // Draw asset lines (sorted highest to lowest for label stacking)
+    // Draw asset lines with inline labels
     datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
-
     const dcaLabelOffsets = [0.3, 0.5, 0.7, 0.4, 0.6, 0.8, 0.2, 0.9];
-    let lastLabelY = 0;
+    const dcaEndLabels = [];
+
     datasets.forEach((ds, dsIdx) => {
       ctx.strokeStyle = ds.color;
       ctx.lineWidth = 2.5;
@@ -1467,19 +1523,15 @@
         ctx.fillText(ds.key, lx, ly - 2);
       }
 
-      // Label at end
+      // Collect end label
       const lastVal = ds.points[ds.points.length - 1];
-      const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      let labelY = yFromVal(lastVal);
-      // Prevent label overlap
-      if (Math.abs(labelY - lastLabelY) < 15) labelY = lastLabelY + 15;
-      lastLabelY = labelY;
-
-      ctx.fillStyle = ds.color;
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 12px -apple-system, sans-serif';
-      ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, labelY + 4);
+      const naturalY = yFromVal(lastVal);
+      dcaEndLabels.push({ y: naturalY, naturalY, text: ds.key + ' $' + formatNum(lastVal), color: ds.color });
     });
+
+    // Draw end labels with guaranteed spacing
+    const lineEndX = margin.left + (plotW * (datasets[0].points.length - 1) / (maxLen - 1));
+    drawEndLabels(ctx, dcaEndLabels, lineEndX, margin);
 
     // X-axis year labels
     ctx.fillStyle = '#94a3b8';
@@ -1605,10 +1657,10 @@
     }
 
     // Draw lines with inline labels
-    // Sort by last value so end labels stack nicely (highest first)
+    // Draw lines with inline labels, collect end labels
     datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
     const labelOffsets = [0.25, 0.45, 0.65, 0.35, 0.55, 0.75, 0.15, 0.85];
-    let lastLabelY = 0;
+    const volEndLabels = [];
 
     datasets.forEach((ds, dsIdx) => {
       // Draw the line
@@ -1624,15 +1676,13 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // Inline label along the line (at a staggered position)
+      // Inline label along the line
       const labelPct = labelOffsets[dsIdx % labelOffsets.length];
       const labelIdx = Math.floor(ds.points.length * labelPct);
       if (labelIdx >= 0 && labelIdx < ds.points.length) {
         const lx = margin.left + (plotW * labelIdx / (maxLen - 1));
         const lVal = ds.points[labelIdx];
         const ly = margin.top + plotH - (plotH * (lVal - globalMin) / range);
-
-        // Draw a small background pill behind the text for readability
         ctx.font = 'bold 11px -apple-system, sans-serif';
         const textW = ctx.measureText(ds.key).width;
         ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -1642,27 +1692,16 @@
         ctx.fillText(ds.key, lx, ly - 2);
       }
 
-      // Label at end of line with background pill and anti-overlap
+      // Collect end label
       const lastVal = ds.points[ds.points.length - 1];
-      const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      let endLabelY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
-
-      // Push labels apart if they'd overlap
-      if (lastLabelY > 0 && Math.abs(endLabelY - lastLabelY) < 16) {
-        endLabelY = lastLabelY + 16;
-      }
-      lastLabelY = endLabelY;
-
       const prefix = lastVal >= 0 ? '+' : '';
-      const endText = ds.key + ' ' + prefix + lastVal.toFixed(0) + '%';
-      ctx.font = 'bold 12px -apple-system, sans-serif';
-      const endTextW = ctx.measureText(endText).width;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.fillRect(lastX + 4, endLabelY - 10, endTextW + 8, 18);
-      ctx.fillStyle = ds.color;
-      ctx.textAlign = 'left';
-      ctx.fillText(endText, lastX + 8, endLabelY + 4);
+      const naturalY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
+      volEndLabels.push({ y: naturalY, naturalY, text: ds.key + ' ' + prefix + lastVal.toFixed(0) + '%', color: ds.color });
     });
+
+    // Draw end labels with guaranteed spacing
+    const volLineEndX = margin.left + (plotW * (datasets[0].points.length - 1) / (maxLen - 1));
+    drawEndLabels(ctx, volEndLabels, volLineEndX, margin);
 
     // X-axis year labels
     ctx.fillStyle = '#94a3b8';
