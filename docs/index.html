@@ -1390,46 +1390,34 @@
     const maxInvested = budget * maxLen;
     if (maxInvested > globalMax) globalMax = maxInvested;
 
-    // Use LOG SCALE so assets with vastly different returns are all visible
-    // Find min value (first month's investment value, roughly = budget)
-    let globalMin = budget;
-    datasets.forEach(ds => {
-      ds.points.forEach(v => { if (v > 0 && v < globalMin) globalMin = v; });
-    });
-    globalMin = Math.max(globalMin * 0.8, budget * 0.5);
-
-    const logMin = Math.log10(globalMin);
-    const logMax = Math.log10(globalMax * 1.15);
-    const logRange = logMax - logMin;
+    // LINEAR SCALE starting from 0
+    const yMax = globalMax * 1.1;
 
     function yFromVal(val) {
-      if (val <= 0) return margin.top + plotH;
-      const logVal = Math.log10(Math.max(val, globalMin));
-      return margin.top + plotH - (plotH * (logVal - logMin) / logRange);
+      return margin.top + plotH - (plotH * val / yMax);
     }
 
-    // Grid lines at nice log intervals
+    // Grid lines
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
     ctx.font = '12px -apple-system, sans-serif';
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'right';
 
-    // Generate nice grid values: $1K, $2K, $5K, $10K, $20K, $50K, $100K, $200K, $500K, $1M, $2M
-    const gridValues = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
-    gridValues.forEach(val => {
-      if (val < globalMin * 0.9 || val > globalMax * 1.2) return;
+    const gridSteps = 5;
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = (yMax / gridSteps) * i;
       const y = yFromVal(val);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
       ctx.lineTo(w - margin.right, y);
       ctx.stroke();
       ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
-    });
+    }
 
     // Draw "total invested" baseline (dashed gray)
-    ctx.strokeStyle = '#475569';
-    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#64748b';
+    ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
     totalInvestedPoints.forEach((val, i) => {
@@ -1443,9 +1431,9 @@
     // Label for invested line
     const invLastX = margin.left + plotW;
     const invLastY = yFromVal(maxInvested);
-    ctx.fillStyle = '#475569';
+    ctx.fillStyle = '#64748b';
     ctx.textAlign = 'left';
-    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.font = 'bold 12px -apple-system, sans-serif';
     ctx.fillText('Invested $' + formatNum(maxInvested), invLastX + 6, invLastY + 4);
 
     // Draw asset lines (sorted highest to lowest for label stacking)
@@ -1477,7 +1465,7 @@
       ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, labelY + 4);
     });
 
-    // X-axis year/month labels
+    // X-axis year labels
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'center';
     ctx.font = '11px -apple-system, sans-serif';
