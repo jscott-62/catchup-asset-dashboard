@@ -1439,8 +1439,9 @@
     // Draw asset lines (sorted highest to lowest for label stacking)
     datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
 
+    const dcaLabelOffsets = [0.3, 0.5, 0.7, 0.4, 0.6, 0.8, 0.2, 0.9];
     let lastLabelY = 0;
-    datasets.forEach(ds => {
+    datasets.forEach((ds, dsIdx) => {
       ctx.strokeStyle = ds.color;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
@@ -1450,6 +1451,21 @@
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
+
+      // Inline label along the line
+      const labelPct = dcaLabelOffsets[dsIdx % dcaLabelOffsets.length];
+      const labelIdx = Math.floor(ds.points.length * labelPct);
+      if (labelIdx >= 0 && labelIdx < ds.points.length) {
+        const lx = margin.left + (plotW * labelIdx / (maxLen - 1));
+        const ly = yFromVal(ds.points[labelIdx]);
+        ctx.font = 'bold 11px -apple-system, sans-serif';
+        const textW = ctx.measureText(ds.key).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(lx - 2, ly - 14, textW + 6, 16);
+        ctx.fillStyle = ds.color;
+        ctx.textAlign = 'left';
+        ctx.fillText(ds.key, lx, ly - 2);
+      }
 
       // Label at end
       const lastVal = ds.points[ds.points.length - 1];
@@ -1588,12 +1604,15 @@
       ctx.fillText('Your Target: ' + reqVal + '%', margin.left + 8, reqY - 8);
     }
 
-    // Draw lines
-    let lastLabelY = 0;
-    datasets.forEach(ds => {
+    // Draw lines with inline labels
+    // Stagger label positions so they don't all land at the same X
+    const labelOffsets = [0.25, 0.45, 0.65, 0.35, 0.55, 0.75, 0.15, 0.85];
+
+    datasets.forEach((ds, dsIdx) => {
+      // Draw the line
       ctx.strokeStyle = ds.color;
-      ctx.lineWidth = 1.5;
-      ctx.globalAlpha = 0.8;
+      ctx.lineWidth = 2;
+      ctx.globalAlpha = 0.85;
       ctx.beginPath();
       ds.points.forEach((val, i) => {
         const x = margin.left + (plotW * i / (maxLen - 1));
@@ -1603,17 +1622,33 @@
       ctx.stroke();
       ctx.globalAlpha = 1;
 
-      // Label at end
+      // Inline label along the line (at a staggered position)
+      const labelPct = labelOffsets[dsIdx % labelOffsets.length];
+      const labelIdx = Math.floor(ds.points.length * labelPct);
+      if (labelIdx >= 0 && labelIdx < ds.points.length) {
+        const lx = margin.left + (plotW * labelIdx / (maxLen - 1));
+        const lVal = ds.points[labelIdx];
+        const ly = margin.top + plotH - (plotH * (lVal - globalMin) / range);
+
+        // Draw a small background pill behind the text for readability
+        ctx.font = 'bold 11px -apple-system, sans-serif';
+        const textW = ctx.measureText(ds.key).width;
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.fillRect(lx - 2, ly - 14, textW + 6, 16);
+        ctx.fillStyle = ds.color;
+        ctx.textAlign = 'left';
+        ctx.fillText(ds.key, lx, ly - 2);
+      }
+
+      // Label at end of line
       const lastVal = ds.points[ds.points.length - 1];
       const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      let labelY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
-      if (Math.abs(labelY - lastLabelY) < 14) labelY = lastLabelY + 14;
-      lastLabelY = labelY;
+      const lastY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
 
       ctx.fillStyle = ds.color;
       ctx.textAlign = 'left';
       ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.fillText(ds.key + ' ' + lastVal.toFixed(0) + '%', lastX + 6, labelY + 4);
+      ctx.fillText(ds.key + ' ' + lastVal.toFixed(0) + '%', lastX + 6, lastY + 4);
     });
 
     // X-axis year labels
