@@ -400,7 +400,8 @@
     border-radius: 8px;
     background: var(--bg);
   }
-  #growthChart { height: 400px; }
+  #dcaGrowthChart { height: 400px; }
+  #volatilityChart { height: 350px; }
   #drawdownChart { height: 300px; }
 
   /* ===== DCA TABLE ===== */
@@ -720,9 +721,22 @@
     </div>
     <div class="card chart-container">
       <div class="chart-header">
-        <span class="chart-title">Growth of $10,000</span>
+        <span class="chart-title">DCA Growth: Your Monthly Investment Over Time</span>
       </div>
-      <canvas id="growthChart" height="400"></canvas>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
+        What <strong id="dcaChartBudget">$500</strong>/month invested consistently would have grown to over 10 years.
+        This is how YOUR journey would actually look.
+      </p>
+      <canvas id="dcaGrowthChart" height="400"></canvas>
+    </div>
+    <div class="card chart-container">
+      <div class="chart-header">
+        <span class="chart-title">The Bumpy Ride: Rolling 12-Month Returns</span>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
+        How wild the ride has been for each asset, month by month. A bumpy ride that gets you there beats a smooth ride off a cliff.
+      </p>
+      <canvas id="volatilityChart" height="350"></canvas>
     </div>
     <div class="card chart-container">
       <div class="chart-header">
@@ -1203,7 +1217,8 @@
 
   function renderCompareCharts() {
     renderReturnsChart();
-    renderGrowthChart();
+    renderDCAGrowthChart();
+    renderVolatilityChart();
     renderDrawdownChart();
   }
 
@@ -1313,18 +1328,17 @@
     }
   }
 
-  function renderGrowthChart() {
-    const canvas = document.getElementById('growthChart');
+  function renderDCAGrowthChart() {
+    const canvas = document.getElementById('dcaGrowthChart');
     if (!canvas) return;
     const { ctx, w, h } = setupCanvas(canvas);
 
-    const margin = { top: 30, right: 30, bottom: 50, left: 80 };
+    const margin = { top: 30, right: 120, bottom: 50, left: 80 };
     const plotW = w - margin.left - margin.right;
     const plotH = h - margin.top - margin.bottom;
 
     ctx.clearRect(0, 0, w, h);
 
-    // Calculate growth of $10,000 for each selected asset
     const selected = getSelectedAssets();
     if (selected.length === 0) {
       ctx.fillStyle = '#94a3b8';
@@ -1334,31 +1348,49 @@
       return;
     }
 
+    const budget = _settings.monthlyBudget;
+    const budgetEl = document.getElementById('dcaChartBudget');
+    if (budgetEl) budgetEl.textContent = '$' + budget.toLocaleString();
+
+    // Simulate DCA for each selected asset month by month
     const datasets = [];
-    let globalMax = 10000;
-    let globalMin = 10000;
+    let globalMax = 0;
     let maxLen = 0;
 
     selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset) return;
       const prices = asset.monthlyPrices;
-      const startPrice = prices[0].close;
-      const points = prices.map((p, i) => {
-        const val = (p.close / startPrice) * 10000;
-        if (val > globalMax) globalMax = val;
-        if (val < globalMin) globalMin = val;
-        return val;
+      let totalUnits = 0;
+      let totalInvested = 0;
+      const points = [];
+
+      prices.forEach((p, i) => {
+        totalUnits += budget / p.close;
+        totalInvested += budget;
+        const currentValue = totalUnits * p.close;
+        points.push(currentValue);
+        if (currentValue > globalMax) globalMax = currentValue;
       });
+
       if (points.length > maxLen) maxLen = points.length;
-      datasets.push({ key, color: asset.color, points, dates: prices.map(p => p.date) });
+      datasets.push({ key, color: asset.color, points, dates: prices.map(p => p.date), totalInvested });
     });
 
     if (datasets.length === 0) return;
 
+    // Total invested line (same for all assets)
+    const totalInvestedPoints = [];
+    for (let i = 0; i < maxLen; i++) {
+      totalInvestedPoints.push(budget * (i + 1));
+    }
+    const maxInvested = budget * maxLen;
+    if (maxInvested > globalMax) globalMax = maxInvested;
+
+    const range = globalMax * 1.05;
+
     // Grid
     const gridSteps = 5;
-    const range = globalMax - Math.min(globalMin, 0);
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
     ctx.font = '12px -apple-system, sans-serif';
@@ -1366,8 +1398,8 @@
     ctx.textAlign = 'right';
 
     for (let i = 0; i <= gridSteps; i++) {
-      const val = globalMin + (range / gridSteps) * i;
-      const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+      const val = (range / gridSteps) * i;
+      const y = margin.top + plotH - (plotH * val / range);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
       ctx.lineTo(w - margin.right, y);
@@ -1375,14 +1407,39 @@
       ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
     }
 
-    // Draw lines
+    // Draw "total invested" baseline (dashed gray)
+    ctx.strokeStyle = '#475569';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    totalInvestedPoints.forEach((val, i) => {
+      const x = margin.left + (plotW * i / (maxLen - 1));
+      const y = margin.top + plotH - (plotH * val / range);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Label for invested line
+    const invLastX = margin.left + plotW;
+    const invLastY = margin.top + plotH - (plotH * maxInvested / range);
+    ctx.fillStyle = '#475569';
+    ctx.textAlign = 'left';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    ctx.fillText('Invested $' + formatNum(maxInvested), invLastX + 6, invLastY + 4);
+
+    // Draw asset lines
+    // Sort datasets so labels don't overlap as much (highest value on top)
+    datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
+
+    let lastLabelY = 0;
     datasets.forEach(ds => {
       ctx.strokeStyle = ds.color;
       ctx.lineWidth = 2;
       ctx.beginPath();
       ds.points.forEach((val, i) => {
         const x = margin.left + (plotW * i / (maxLen - 1));
-        const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+        const y = margin.top + plotH - (plotH * val / range);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
@@ -1390,11 +1447,15 @@
       // Label at end
       const lastVal = ds.points[ds.points.length - 1];
       const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      const lastY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
+      let labelY = margin.top + plotH - (plotH * lastVal / range);
+      // Prevent label overlap
+      if (Math.abs(labelY - lastLabelY) < 14) labelY = lastLabelY + 14;
+      lastLabelY = labelY;
+
       ctx.fillStyle = ds.color;
       ctx.textAlign = 'left';
       ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, lastY + 4);
+      ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, labelY + 4);
     });
 
     // X-axis year labels
@@ -1411,17 +1472,147 @@
         ctx.fillText(year, x, h - margin.bottom + 18);
       }
     });
+  }
 
-    // Starting value line
-    const startY = margin.top + plotH - (plotH * (10000 - globalMin) / range);
-    ctx.strokeStyle = '#475569';
+  function renderVolatilityChart() {
+    const canvas = document.getElementById('volatilityChart');
+    if (!canvas) return;
+    const { ctx, w, h } = setupCanvas(canvas);
+
+    const margin = { top: 30, right: 120, bottom: 50, left: 70 };
+    const plotW = w - margin.left - margin.right;
+    const plotH = h - margin.top - margin.bottom;
+
+    ctx.clearRect(0, 0, w, h);
+
+    const selected = getSelectedAssets();
+    if (selected.length === 0) {
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '16px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Select assets on the Overview tab to compare them here.', w / 2, h / 2);
+      return;
+    }
+
+    // Calculate rolling 12-month returns for each asset
+    const datasets = [];
+    let globalMax = -Infinity;
+    let globalMin = Infinity;
+    let maxLen = 0;
+
+    selected.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset || asset.monthlyPrices.length < 13) return;
+      const prices = asset.monthlyPrices;
+      const points = [];
+      const dates = [];
+
+      for (let i = 12; i < prices.length; i++) {
+        const ret = ((prices[i].close / prices[i - 12].close) - 1) * 100;
+        points.push(ret);
+        dates.push(prices[i].date);
+        if (ret > globalMax) globalMax = ret;
+        if (ret < globalMin) globalMin = ret;
+      }
+
+      if (points.length > maxLen) maxLen = points.length;
+      datasets.push({ key, color: asset.color, points, dates });
+    });
+
+    if (datasets.length === 0) return;
+
+    // Pad range
+    globalMax = globalMax * 1.1;
+    globalMin = Math.min(globalMin * 1.1, -10);
+    const range = globalMax - globalMin;
+
+    // Grid
+    const gridSteps = 6;
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 0.5;
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'right';
+
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = globalMin + (range / gridSteps) * i;
+      const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, y);
+      ctx.lineTo(w - margin.right, y);
+      ctx.stroke();
+      ctx.fillText(val.toFixed(0) + '%', margin.left - 8, y + 4);
+    }
+
+    // Zero line (thicker)
+    const zeroY = margin.top + plotH - (plotH * (0 - globalMin) / range);
+    ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]);
     ctx.beginPath();
-    ctx.moveTo(margin.left, startY);
-    ctx.lineTo(w - margin.right, startY);
+    ctx.moveTo(margin.left, zeroY);
+    ctx.lineTo(w - margin.right, zeroY);
     ctx.stroke();
-    ctx.setLineDash([]);
+
+    // Required return line
+    const reqVal = _settings.requiredReturn;
+    const reqY = margin.top + plotH - (plotH * (reqVal - globalMin) / range);
+    if (reqY > margin.top && reqY < margin.top + plotH) {
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([8, 4]);
+      ctx.beginPath();
+      ctx.moveTo(margin.left, reqY);
+      ctx.lineTo(w - margin.right, reqY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = '#f59e0b';
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText('Your Target: ' + reqVal + '%', margin.left + 8, reqY - 8);
+    }
+
+    // Draw lines
+    let lastLabelY = 0;
+    datasets.forEach(ds => {
+      ctx.strokeStyle = ds.color;
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath();
+      ds.points.forEach((val, i) => {
+        const x = margin.left + (plotW * i / (maxLen - 1));
+        const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      });
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+
+      // Label at end
+      const lastVal = ds.points[ds.points.length - 1];
+      const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
+      let labelY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
+      if (Math.abs(labelY - lastLabelY) < 14) labelY = lastLabelY + 14;
+      lastLabelY = labelY;
+
+      ctx.fillStyle = ds.color;
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText(ds.key + ' ' + lastVal.toFixed(0) + '%', lastX + 6, labelY + 4);
+    });
+
+    // X-axis year labels
+    ctx.fillStyle = '#94a3b8';
+    ctx.textAlign = 'center';
+    ctx.font = '11px -apple-system, sans-serif';
+    const firstDates = datasets[0] ? datasets[0].dates : [];
+    const yearsShown = new Set();
+    firstDates.forEach((date, i) => {
+      const year = date.substring(0, 4);
+      if (!yearsShown.has(year)) {
+        yearsShown.add(year);
+        const x = margin.left + (plotW * i / (maxLen - 1));
+        ctx.fillText(year, x, h - margin.bottom + 18);
+      }
+    });
   }
 
   function renderDrawdownChart() {
