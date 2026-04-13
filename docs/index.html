@@ -1812,6 +1812,15 @@
       return;
     }
 
+    // If all selected assets are at 0%, distribute evenly
+    const currentTotal = selected.reduce((sum, k) => sum + (_settings.portfolioAllocations[k] || 0), 0);
+    if (currentTotal === 0 && selected.length > 0) {
+      const even = Math.floor(100 / selected.length);
+      selected.forEach((k, i) => {
+        _settings.portfolioAllocations[k] = i === 0 ? 100 - even * (selected.length - 1) : even;
+      });
+    }
+
     // Sliders
     let slidersHtml = '';
     selected.forEach(key => {
@@ -1851,7 +1860,8 @@
   }
 
   function updatePortfolioMetrics() {
-    const total = Object.values(_settings.portfolioAllocations).reduce((a, b) => a + b, 0);
+    const selected = getSelectedAssets();
+    const total = selected.reduce((sum, key) => sum + (_settings.portfolioAllocations[key] || 0), 0);
     const totalEl = document.getElementById('allocationTotal');
     totalEl.innerHTML = `<span>Total Allocation</span><span class="${total === 100 ? 'allocation-ok' : 'allocation-warn'}">${total}%</span>`;
 
