@@ -730,10 +730,10 @@
     </div>
     <div class="card chart-container">
       <div class="chart-header">
-        <span class="chart-title">The Bumpy Ride: Rolling 12-Month Returns</span>
+        <span class="chart-title">The Bumpy Ride: How Wide Is the Range?</span>
       </div>
       <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
-        Each point shows the trailing 12-month return at that moment. The value at the end of each line is the CURRENT trailing 12-month return, not the long-term average. A bumpy ride that gets you there beats a smooth ride off a cliff.
+        The full range of 12-month returns each asset has delivered. Wider bars mean wilder rides. The dot shows the average. A bumpy ride that gets you there beats a smooth ride off a cliff.
       </p>
       <canvas id="volatilityChart" height="350"></canvas>
     </div>
@@ -1554,7 +1554,7 @@
     if (!canvas) return;
     const { ctx, w, h } = setupCanvas(canvas);
 
-    const margin = { top: 30, right: 120, bottom: 50, left: 70 };
+    const margin = { top: 30, right: 30, bottom: 50, left: 70 };
     const plotW = w - margin.left - margin.right;
     const plotH = h - margin.top - margin.bottom;
 
@@ -1571,47 +1571,48 @@
 
     // Calculate rolling 12-month returns for selected timeframe
     const years = _settings.compareTimeframe || 10;
-    const datasets = [];
+    const assets = [];
     let globalMax = -Infinity;
     let globalMin = Infinity;
-    let maxLen = 0;
 
     selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset || asset.monthlyPrices.length < 13) return;
       const allPrices = asset.monthlyPrices;
-      const points = [];
-      const dates = [];
+      const returns = [];
 
       for (let i = 12; i < allPrices.length; i++) {
         const ret = ((allPrices[i].close / allPrices[i - 12].close) - 1) * 100;
-        points.push(ret);
-        dates.push(allPrices[i].date);
+        returns.push(ret);
       }
 
-      // Trim to selected timeframe (years worth of rolling returns)
+      // Trim to selected timeframe
       const keepMonths = years * 12;
-      const trimStart = Math.max(0, points.length - keepMonths);
-      const trimmedPoints = points.slice(trimStart);
-      const trimmedDates = dates.slice(trimStart);
+      const trimStart = Math.max(0, returns.length - keepMonths);
+      const trimmed = returns.slice(trimStart);
 
-      trimmedPoints.forEach(r => {
-        if (r > globalMax) globalMax = r;
-        if (r < globalMin) globalMin = r;
-      });
+      const best = Math.max(...trimmed);
+      const worst = Math.min(...trimmed);
+      const avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
 
-      if (trimmedPoints.length > maxLen) maxLen = trimmedPoints.length;
-      datasets.push({ key, color: asset.color, points: trimmedPoints, dates: trimmedDates });
+      if (best > globalMax) globalMax = best;
+      if (worst < globalMin) globalMin = worst;
+
+      assets.push({ key, color: asset.color, name: asset.name, best, worst, avg });
     });
 
-    if (datasets.length === 0) return;
+    if (assets.length === 0) return;
 
     // Pad range
-    globalMax = globalMax * 1.1;
-    globalMin = Math.min(globalMin * 1.1, -10);
+    globalMax = globalMax * 1.1 + 5;
+    globalMin = globalMin * 1.1 - 5;
     const range = globalMax - globalMin;
 
-    // Grid
+    function yFromVal(val) {
+      return margin.top + plotH - (plotH * (val - globalMin) / range);
+    }
+
+    // Grid lines
     const gridSteps = 6;
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
@@ -1621,16 +1622,16 @@
 
     for (let i = 0; i <= gridSteps; i++) {
       const val = globalMin + (range / gridSteps) * i;
-      const y = margin.top + plotH - (plotH * (val - globalMin) / range);
+      const y = yFromVal(val);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
       ctx.lineTo(w - margin.right, y);
       ctx.stroke();
-      ctx.fillText(val.toFixed(0) + '%', margin.left - 8, y + 4);
+      ctx.fillText((val >= 0 ? '+' : '') + val.toFixed(0) + '%', margin.left - 8, y + 4);
     }
 
-    // Zero line (thicker)
-    const zeroY = margin.top + plotH - (plotH * (0 - globalMin) / range);
+    // Zero line
+    const zeroY = yFromVal(0);
     ctx.strokeStyle = '#94a3b8';
     ctx.lineWidth = 1;
     ctx.beginPath();
@@ -1640,7 +1641,7 @@
 
     // Required return line
     const reqVal = _settings.requiredReturn;
-    const reqY = margin.top + plotH - (plotH * (reqVal - globalMin) / range);
+    const reqY = yFromVal(reqVal);
     if (reqY > margin.top && reqY < margin.top + plotH) {
       ctx.strokeStyle = '#f59e0b';
       ctx.lineWidth = 1.5;
@@ -1656,66 +1657,73 @@
       ctx.fillText('Your Target: ' + reqVal + '%', margin.left + 8, reqY - 8);
     }
 
-    // Draw lines with inline labels
-    // Draw lines with inline labels, collect end labels
-    datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
-    const labelOffsets = [0.25, 0.45, 0.65, 0.35, 0.55, 0.75, 0.15, 0.85];
-    const volEndLabels = [];
+    // Draw range bars for each asset
+    const barWidth = Math.min(50, plotW / assets.length * 0.5);
+    const gap = (plotW - barWidth * assets.length) / (assets.length + 1);
 
-    datasets.forEach((ds, dsIdx) => {
-      // Draw the line
-      ctx.strokeStyle = ds.color;
+    assets.forEach((a, i) => {
+      const x = margin.left + gap + i * (barWidth + gap);
+      const centerX = x + barWidth / 2;
+
+      const bestY = yFromVal(a.best);
+      const worstY = yFromVal(a.worst);
+      const avgY = yFromVal(a.avg);
+
+      // Range bar (vertical bar from worst to best)
+      ctx.fillStyle = a.color + '30'; // 20% opacity fill
+      ctx.fillRect(x, bestY, barWidth, worstY - bestY);
+
+      // Bar border
+      ctx.strokeStyle = a.color;
       ctx.lineWidth = 2;
-      ctx.globalAlpha = 0.85;
+      ctx.strokeRect(x, bestY, barWidth, worstY - bestY);
+
+      // Best line (top cap)
+      ctx.strokeStyle = a.color;
+      ctx.lineWidth = 2;
       ctx.beginPath();
-      ds.points.forEach((val, i) => {
-        const x = margin.left + (plotW * i / (maxLen - 1));
-        const y = margin.top + plotH - (plotH * (val - globalMin) / range);
-        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      });
+      ctx.moveTo(x - 4, bestY);
+      ctx.lineTo(x + barWidth + 4, bestY);
       ctx.stroke();
-      ctx.globalAlpha = 1;
 
-      // Inline label along the line
-      const labelPct = labelOffsets[dsIdx % labelOffsets.length];
-      const labelIdx = Math.floor(ds.points.length * labelPct);
-      if (labelIdx >= 0 && labelIdx < ds.points.length) {
-        const lx = margin.left + (plotW * labelIdx / (maxLen - 1));
-        const lVal = ds.points[labelIdx];
-        const ly = margin.top + plotH - (plotH * (lVal - globalMin) / range);
-        ctx.font = 'bold 11px -apple-system, sans-serif';
-        const textW = ctx.measureText(ds.key).width;
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-        ctx.fillRect(lx - 2, ly - 14, textW + 6, 16);
-        ctx.fillStyle = ds.color;
-        ctx.textAlign = 'left';
-        ctx.fillText(ds.key, lx, ly - 2);
-      }
+      // Worst line (bottom cap)
+      ctx.beginPath();
+      ctx.moveTo(x - 4, worstY);
+      ctx.lineTo(x + barWidth + 4, worstY);
+      ctx.stroke();
 
-      // Collect end label
-      const lastVal = ds.points[ds.points.length - 1];
-      const prefix = lastVal >= 0 ? '+' : '';
-      const naturalY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
-      volEndLabels.push({ y: naturalY, naturalY, text: ds.key + ' ' + prefix + lastVal.toFixed(0) + '%', color: ds.color });
-    });
+      // Average dot (filled circle)
+      ctx.fillStyle = a.color;
+      ctx.beginPath();
+      ctx.arc(centerX, avgY, 6, 0, Math.PI * 2);
+      ctx.fill();
+      // White inner dot
+      ctx.fillStyle = '#0f172a';
+      ctx.beginPath();
+      ctx.arc(centerX, avgY, 3, 0, Math.PI * 2);
+      ctx.fill();
 
-    // Draw end labels with guaranteed spacing
-    const volLineEndX = margin.left + (plotW * (datasets[0].points.length - 1) / (maxLen - 1));
-    drawEndLabels(ctx, volEndLabels, volLineEndX, margin);
+      // Labels: Best
+      ctx.fillStyle = '#e2e8f0';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      ctx.fillText('+' + a.best.toFixed(0) + '%', centerX, bestY - 8);
 
-    // X-axis year labels
-    ctx.fillStyle = '#94a3b8';
-    ctx.textAlign = 'center';
-    ctx.font = '11px -apple-system, sans-serif';
-    const firstDates = datasets[0] ? datasets[0].dates : [];
-    const yearsShown = new Set();
-    firstDates.forEach((date, i) => {
-      const year = date.substring(0, 4);
-      if (!yearsShown.has(year)) {
-        yearsShown.add(year);
-        const x = margin.left + (plotW * i / (maxLen - 1));
-        ctx.fillText(year, x, h - margin.bottom + 18);
-      }
+      // Labels: Worst
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillText(a.worst.toFixed(0) + '%', centerX, worstY + 18);
+
+      // Labels: Average (next to dot)
+      ctx.fillStyle = a.color;
+      ctx.textAlign = 'left';
+      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.fillText('avg ' + (a.avg >= 0 ? '+' : '') + a.avg.toFixed(0) + '%', centerX + 10, avgY + 4);
+
+      // Ticker label
+      ctx.fillStyle = a.color;
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 13px -apple-system, sans-serif';
+      ctx.fillText(a.key, centerX, h - margin.bottom + 20);
     });
   }
 
