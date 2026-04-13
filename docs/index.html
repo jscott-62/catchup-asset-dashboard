@@ -733,7 +733,7 @@
         <span class="chart-title">The Bumpy Ride: Rolling 12-Month Returns</span>
       </div>
       <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
-        How wild the ride has been for each asset, month by month. A bumpy ride that gets you there beats a smooth ride off a cliff.
+        Each point shows the trailing 12-month return at that moment. The value at the end of each line is the CURRENT trailing 12-month return, not the long-term average. A bumpy ride that gets you there beats a smooth ride off a cliff.
       </p>
       <canvas id="volatilityChart" height="350"></canvas>
     </div>
@@ -1605,8 +1605,10 @@
     }
 
     // Draw lines with inline labels
-    // Stagger label positions so they don't all land at the same X
+    // Sort by last value so end labels stack nicely (highest first)
+    datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
     const labelOffsets = [0.25, 0.45, 0.65, 0.35, 0.55, 0.75, 0.15, 0.85];
+    let lastLabelY = 0;
 
     datasets.forEach((ds, dsIdx) => {
       // Draw the line
@@ -1640,15 +1642,26 @@
         ctx.fillText(ds.key, lx, ly - 2);
       }
 
-      // Label at end of line
+      // Label at end of line with background pill and anti-overlap
       const lastVal = ds.points[ds.points.length - 1];
       const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      const lastY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
+      let endLabelY = margin.top + plotH - (plotH * (lastVal - globalMin) / range);
 
+      // Push labels apart if they'd overlap
+      if (lastLabelY > 0 && Math.abs(endLabelY - lastLabelY) < 16) {
+        endLabelY = lastLabelY + 16;
+      }
+      lastLabelY = endLabelY;
+
+      const prefix = lastVal >= 0 ? '+' : '';
+      const endText = ds.key + ' ' + prefix + lastVal.toFixed(0) + '%';
+      ctx.font = 'bold 12px -apple-system, sans-serif';
+      const endTextW = ctx.measureText(endText).width;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+      ctx.fillRect(lastX + 4, endLabelY - 10, endTextW + 8, 18);
       ctx.fillStyle = ds.color;
       ctx.textAlign = 'left';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.fillText(ds.key + ' ' + lastVal.toFixed(0) + '%', lastX + 6, lastY + 4);
+      ctx.fillText(endText, lastX + 8, endLabelY + 4);
     });
 
     // X-axis year labels
