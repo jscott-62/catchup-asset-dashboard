@@ -1390,25 +1390,42 @@
     const maxInvested = budget * maxLen;
     if (maxInvested > globalMax) globalMax = maxInvested;
 
-    const range = globalMax * 1.05;
+    // Use LOG SCALE so assets with vastly different returns are all visible
+    // Find min value (first month's investment value, roughly = budget)
+    let globalMin = budget;
+    datasets.forEach(ds => {
+      ds.points.forEach(v => { if (v > 0 && v < globalMin) globalMin = v; });
+    });
+    globalMin = Math.max(globalMin * 0.8, budget * 0.5);
 
-    // Grid
-    const gridSteps = 5;
+    const logMin = Math.log10(globalMin);
+    const logMax = Math.log10(globalMax * 1.15);
+    const logRange = logMax - logMin;
+
+    function yFromVal(val) {
+      if (val <= 0) return margin.top + plotH;
+      const logVal = Math.log10(Math.max(val, globalMin));
+      return margin.top + plotH - (plotH * (logVal - logMin) / logRange);
+    }
+
+    // Grid lines at nice log intervals
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
     ctx.font = '12px -apple-system, sans-serif';
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'right';
 
-    for (let i = 0; i <= gridSteps; i++) {
-      const val = (range / gridSteps) * i;
-      const y = margin.top + plotH - (plotH * val / range);
+    // Generate nice grid values: $1K, $2K, $5K, $10K, $20K, $50K, $100K, $200K, $500K, $1M, $2M
+    const gridValues = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000];
+    gridValues.forEach(val => {
+      if (val < globalMin * 0.9 || val > globalMax * 1.2) return;
+      const y = yFromVal(val);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
       ctx.lineTo(w - margin.right, y);
       ctx.stroke();
       ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
-    }
+    });
 
     // Draw "total invested" baseline (dashed gray)
     ctx.strokeStyle = '#475569';
@@ -1417,7 +1434,7 @@
     ctx.beginPath();
     totalInvestedPoints.forEach((val, i) => {
       const x = margin.left + (plotW * i / (maxLen - 1));
-      const y = margin.top + plotH - (plotH * val / range);
+      const y = yFromVal(val);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
     });
     ctx.stroke();
@@ -1425,24 +1442,23 @@
 
     // Label for invested line
     const invLastX = margin.left + plotW;
-    const invLastY = margin.top + plotH - (plotH * maxInvested / range);
+    const invLastY = yFromVal(maxInvested);
     ctx.fillStyle = '#475569';
     ctx.textAlign = 'left';
     ctx.font = 'bold 11px -apple-system, sans-serif';
     ctx.fillText('Invested $' + formatNum(maxInvested), invLastX + 6, invLastY + 4);
 
-    // Draw asset lines
-    // Sort datasets so labels don't overlap as much (highest value on top)
+    // Draw asset lines (sorted highest to lowest for label stacking)
     datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
 
     let lastLabelY = 0;
     datasets.forEach(ds => {
       ctx.strokeStyle = ds.color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ds.points.forEach((val, i) => {
         const x = margin.left + (plotW * i / (maxLen - 1));
-        const y = margin.top + plotH - (plotH * val / range);
+        const y = yFromVal(val);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
       ctx.stroke();
@@ -1450,18 +1466,18 @@
       // Label at end
       const lastVal = ds.points[ds.points.length - 1];
       const lastX = margin.left + (plotW * (ds.points.length - 1) / (maxLen - 1));
-      let labelY = margin.top + plotH - (plotH * lastVal / range);
+      let labelY = yFromVal(lastVal);
       // Prevent label overlap
-      if (Math.abs(labelY - lastLabelY) < 14) labelY = lastLabelY + 14;
+      if (Math.abs(labelY - lastLabelY) < 15) labelY = lastLabelY + 15;
       lastLabelY = labelY;
 
       ctx.fillStyle = ds.color;
       ctx.textAlign = 'left';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
+      ctx.font = 'bold 12px -apple-system, sans-serif';
       ctx.fillText(ds.key + ' $' + formatNum(lastVal), lastX + 6, labelY + 4);
     });
 
-    // X-axis year labels
+    // X-axis year/month labels
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'center';
     ctx.font = '11px -apple-system, sans-serif';
