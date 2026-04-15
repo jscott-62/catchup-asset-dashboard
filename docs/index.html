@@ -594,6 +594,37 @@
     margin-left: 8px;
   }
 
+  /* ===== PLAN SUMMARY BAR ===== */
+  .plan-summary {
+    display: none;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.25);
+    border-radius: 10px;
+    padding: 12px 18px;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .plan-summary.show { display: flex; }
+  .plan-summary-text {
+    font-size: 14px;
+    color: var(--text);
+  }
+  .plan-summary-text strong {
+    color: var(--accent);
+    font-weight: 700;
+  }
+  .plan-summary-link {
+    font-size: 13px;
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .plan-summary-link:hover { text-decoration: underline; }
+
   /* ===== FREEDOM NUMBER BUILDER ===== */
   .fn-builder {
     display: grid;
@@ -826,32 +857,12 @@
     <div class="data-date" id="dataDate">Data as of: Loading...</div>
   </div>
 
-  <!-- USER INPUT PANEL -->
-  <div class="input-panel">
-    <div class="input-group">
-      <label>Required Return Rate</label>
-      <div class="input-wrapper">
-        <input type="number" id="inputReturn" min="5" max="100" step="1" value="22" placeholder="22">
-      </div>
-      <span style="font-size:11px;color:var(--muted)">% per year. Ask Atlas if you're not sure.</span>
+  <!-- PLAN SUMMARY (hidden on Freedom Number tab) -->
+  <div class="plan-summary" id="planSummary">
+    <div class="plan-summary-text" id="planSummaryText">
+      Start on the Freedom Number tab to build your plan.
     </div>
-    <div class="input-group">
-      <label>Investment Timeline</label>
-      <div class="input-wrapper">
-        <input type="number" id="inputTimeline" min="1" max="30" step="1" value="15" placeholder="15">
-      </div>
-      <span style="font-size:11px;color:var(--muted)">Years to retirement</span>
-    </div>
-    <div class="input-group">
-      <label>Monthly Budget</label>
-      <div class="input-wrapper">
-        <input type="number" id="inputBudget" min="50" max="50000" step="50" value="500" placeholder="500">
-      </div>
-      <span style="font-size:11px;color:var(--muted)">$ per month to invest</span>
-    </div>
-    <div class="your-numbers" id="yourNumbers">
-      You need <strong>22%</strong> annually over <strong>12 years</strong>, investing <strong>$500/mo</strong>
-    </div>
+    <a href="#" class="plan-summary-link" id="planSummaryLink">Change these →</a>
   </div>
 
   <!-- TABS -->
@@ -1198,7 +1209,6 @@
   function init() {
     loadCachedAssets();
     loadSettings();
-    populateInputs();
     populateFNInputs();
     computeAllMetrics();
     renderAll();
@@ -1240,12 +1250,6 @@
       _settings._savedAt = new Date().toISOString();
       localStorage.setItem('catchup-dashboard-settings', JSON.stringify(_settings));
     } catch(e) {}
-  }
-
-  function populateInputs() {
-    document.getElementById('inputReturn').value = _settings.requiredReturn;
-    document.getElementById('inputTimeline').value = _settings.timeline;
-    document.getElementById('inputBudget').value = _settings.monthlyBudget;
   }
 
   // --- Freedom Number Builder ---
@@ -1441,7 +1445,6 @@
     _settings.timeline = fn.spYears || 15;
     _settings.monthlyBudget = fn.spMonthly || 500;
 
-    populateInputs();
     computeAllMetrics();
     renderAll();
     debounceSave();
@@ -1638,7 +1641,7 @@
   // --- Rendering ---
   function renderAll() {
     renderHeader();
-    renderYourNumbers();
+    renderPlanSummary();
     renderAssetCards();
     // Only render charts if compare tab is visible (canvas needs dimensions)
     if (_settings.activeTab === 'compare') {
@@ -1652,9 +1655,24 @@
     document.getElementById('dataDate').textContent = 'Data as of: ' + (_data.lastUpdated || 'Unknown');
   }
 
-  function renderYourNumbers() {
-    const el = document.getElementById('yourNumbers');
-    el.innerHTML = `You need <strong>${_settings.requiredReturn}%</strong> annually over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong>`;
+  function renderPlanSummary() {
+    const bar = document.getElementById('planSummary');
+    const text = document.getElementById('planSummaryText');
+    if (!bar || !text) return;
+
+    // Show on every tab except the Freedom Number tab
+    if (_settings.activeTab === 'freedom') {
+      bar.classList.remove('show');
+      return;
+    }
+    bar.classList.add('show');
+
+    const fn = _settings.fn || {};
+    if (fn.calculatedFN > 0) {
+      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong> to reach <strong>$${fn.calculatedFN.toLocaleString()}</strong>.`;
+    } else {
+      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong>.`;
+    }
   }
 
   function renderAssetCards() {
@@ -2609,6 +2627,7 @@
         document.getElementById('tab-' + tab).classList.add('active');
         _settings.activeTab = tab;
         debounceSave();
+        renderPlanSummary();
 
         // Re-render content when switching tabs
         if (tab === 'compare') {
@@ -2632,9 +2651,11 @@
       });
     });
 
-    // User inputs
-    ['inputReturn', 'inputTimeline', 'inputBudget'].forEach(id => {
-      document.getElementById(id).addEventListener('input', onInputChange);
+    // Plan summary link: clicking it switches back to the Freedom Number tab
+    document.getElementById('planSummaryLink').addEventListener('click', e => {
+      e.preventDefault();
+      const freedomBtn = document.querySelector('.tab-btn[data-tab="freedom"]');
+      if (freedomBtn) freedomBtn.click();
     });
 
     // Selection bar buttons
@@ -2743,15 +2764,6 @@
         tfBtn.classList.add('active');
       }
     }
-  }
-
-  function onInputChange() {
-    _settings.requiredReturn = parseFloat(document.getElementById('inputReturn').value) || 15;
-    _settings.timeline = parseInt(document.getElementById('inputTimeline').value) || 10;
-    _settings.monthlyBudget = parseFloat(document.getElementById('inputBudget').value) || 500;
-    computeAllMetrics();
-    renderAll();
-    debounceSave();
   }
 
   // CoinGecko coin ID mapping for common tickers
