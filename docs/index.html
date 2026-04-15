@@ -509,6 +509,7 @@
     border-radius: 8px;
     padding: 16px;
     text-align: center;
+    position: relative;
   }
   .blended-metric .value {
     font-size: 28px;
@@ -519,6 +520,72 @@
     font-size: 12px;
     color: var(--muted);
     text-transform: uppercase;
+  }
+  /* Info icon (small question mark in top right of each metric) */
+  .metric-info-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    transition: all 0.15s;
+  }
+  .metric-info-btn:hover {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .metric-info-btn.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  /* The popup explainer card */
+  .metric-explainer {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 8px;
+    background: var(--card);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-size: 13px;
+    color: var(--text);
+    text-align: left;
+    line-height: 1.55;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+  }
+  .metric-explainer.show { display: block; }
+  .metric-explainer strong {
+    color: var(--accent);
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .metric-explainer p { margin-bottom: 8px; }
+  .metric-explainer p:last-child { margin-bottom: 0; }
+  .metric-explainer .close-hint {
+    font-size: 11px;
+    color: var(--muted);
+    font-style: italic;
+    margin-top: 8px;
   }
 
   /* ===== CATEGORY FILTERS ===== */
@@ -2574,25 +2641,78 @@
     const metricsEl = document.getElementById('blendedMetrics');
     metricsEl.innerHTML = `
       <div class="blended-metric">
+        <button class="metric-info-btn" data-explain="return">?</button>
         <div class="value" style="color:${blendedReturn >= _settings.requiredReturn ? 'var(--green)' : 'var(--accent)'}">${blendedReturn.toFixed(1)}%</div>
         <div class="label">Blended Annual Return</div>
+        <div class="metric-explainer" data-for="return">
+          <strong>Blended Annual Return</strong>
+          <p>This is the <em>weighted average</em> of each selected asset's historical long-term return, based on how much of your portfolio you've allocated to each.</p>
+          <p>Example: 50% Bitcoin (63% historical) + 30% Gold (14%) + 20% SPY (12%) = <strong>38.1%</strong> blended.</p>
+          <p>It's a backwards-looking estimate based on the last decade of real market data. It does NOT predict the future. Past performance never guarantees future results.</p>
+          <div class="close-hint">Click the ? again to close.</div>
+        </div>
       </div>
       <div class="blended-metric">
+        <button class="metric-info-btn" data-explain="vol">?</button>
         <div class="value">${blendedVol.toFixed(1)}%</div>
         <div class="label">Blended Volatility</div>
+        <div class="metric-explainer" data-for="vol">
+          <strong>Blended Volatility</strong>
+          <p>This measures how much your portfolio's returns swing from year to year. Higher number = bumpier ride.</p>
+          <p>Think of it this way: if your blend shows 40% volatility, in any given year the return could reasonably land anywhere from roughly -20% to +60% around its average.</p>
+          <p><em>Technical note:</em> Real portfolio theory accounts for correlation between assets, so a well-diversified blend is often less volatile than this number suggests. We use a simplified weighted average, so this errs on the side of caution.</p>
+          <div class="close-hint">Click the ? again to close.</div>
+        </div>
       </div>
       <div class="blended-metric">
+        <button class="metric-info-btn" data-explain="fit">?</button>
         <div class="value" style="color:${grade.color}">${grade.letter}</div>
         <div class="label">Blended Catch-Up Fit</div>
         <div style="font-size:13px;color:var(--muted);margin-top:8px">${grade.label}</div>
+        <div class="metric-explainer" data-for="fit">
+          <strong>Catch-Up Fit Score</strong>
+          <p>A personalized grade (A-F) that combines three things:</p>
+          <p>• <strong>Return Score (60%):</strong> How well the blended return matches or exceeds YOUR required rate.</p>
+          <p>• <strong>Volatility Score (25%):</strong> Whether the ride is too rough for YOUR timeline. Shorter timeline = bigger volatility penalty.</p>
+          <p>• <strong>Consistency Score (15%):</strong> Rewards efficient returns (more reward per unit of risk).</p>
+          <p>A blend can get a high return but a low grade if it's too volatile for your timeline, or vice versa.</p>
+          <div class="close-hint">Click the ? again to close.</div>
+        </div>
       </div>
       <div class="blended-metric">
+        <button class="metric-info-btn" data-explain="meets">?</button>
         <div class="value" style="color:${blendedReturn >= _settings.requiredReturn ? 'var(--green)' : 'var(--red)'}">
           ${blendedReturn >= _settings.requiredReturn ? 'YES' : 'NO'}
         </div>
         <div class="label">Meets Your Required ${_settings.requiredReturn}%?</div>
+        <div class="metric-explainer" data-for="meets">
+          <strong>Meets Your Required Return?</strong>
+          <p>A simple yes/no answer to: "Is the blended return high enough to reach my Freedom Number on my timeline?"</p>
+          <p><strong>YES</strong> = the math works historically. Your blend's average return is at or above what you need.</p>
+          <p><strong>NO</strong> = the gap won't close on its own. You'd need more years, more monthly investment, higher-return assets, or a lower Freedom Number target.</p>
+          <p><em>Important:</em> YES doesn't mean guaranteed or safe. Check the Fit Score grade too. A blend can meet the target technically while being too rough a ride to actually stick with.</p>
+          <div class="close-hint">Click the ? again to close.</div>
+        </div>
       </div>
     `;
+
+    // Wire up info icon clicks
+    metricsEl.querySelectorAll('.metric-info-btn').forEach(btn => {
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const key = btn.dataset.explain;
+        const target = metricsEl.querySelector(`.metric-explainer[data-for="${key}"]`);
+        const isOpen = target.classList.contains('show');
+        // Close all
+        metricsEl.querySelectorAll('.metric-explainer').forEach(ex => ex.classList.remove('show'));
+        metricsEl.querySelectorAll('.metric-info-btn').forEach(b => b.classList.remove('active'));
+        // Toggle the clicked one
+        if (!isOpen) {
+          target.classList.add('show');
+          btn.classList.add('active');
+        }
+      });
+    });
   }
 
   // --- Helpers ---
