@@ -184,11 +184,11 @@
   .asset-card.selected { border-color: var(--accent); }
   .asset-card.dimmed { opacity: 0.5; }
 
-  /* Asset checkbox */
+  /* Asset checkbox (top-left so it doesn't cover the category badge) */
   .asset-checkbox {
     position: absolute;
     top: 16px;
-    right: 16px;
+    left: 16px;
     width: 24px;
     height: 24px;
     -webkit-appearance: none;
@@ -254,6 +254,7 @@
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 16px;
+    padding-left: 36px; /* clear the checkbox in the top-left */
   }
   .asset-name {
     font-size: 18px;
