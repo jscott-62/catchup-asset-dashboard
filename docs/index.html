@@ -597,7 +597,7 @@
   /* ===== FREEDOM NUMBER BUILDER ===== */
   .fn-builder {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(3, 1fr);
     gap: 20px;
   }
   .fn-section {
@@ -790,6 +790,9 @@
     .asset-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
     .portfolio-grid { grid-template-columns: 1fr; }
   }
+  @media (max-width: 1200px) {
+    .fn-builder { grid-template-columns: 1fr 1fr; }
+  }
   @media (max-width: 768px) {
     body { padding: 16px; }
     .header { flex-direction: column; align-items: flex-start; gap: 8px; }
@@ -972,6 +975,36 @@
         </div>
       </div>
 
+      <!-- SECTION 3: Starting Point -->
+      <div class="fn-section">
+        <h3>3. Your Starting Point</h3>
+        <p class="fn-sub">Where are you today, and what can you commit to each month? These three inputs plus your Freedom Number determine the annual return rate you need.</p>
+
+        <div class="fn-field">
+          <label>Current Savings</label>
+          <input type="number" id="spSavings" min="0" step="1000" value="50000">
+          <span class="hint">All retirement savings you have today (401k, IRA, brokerage, crypto)</span>
+        </div>
+
+        <div class="fn-field">
+          <label>Monthly Investment</label>
+          <input type="number" id="spMonthly" min="0" step="50" value="500">
+          <span class="hint">How much you can realistically add each month</span>
+        </div>
+
+        <div class="fn-field">
+          <label>Years to Retirement</label>
+          <input type="number" id="spYears" min="1" max="40" step="1" value="15">
+          <span class="hint">How long you have to build your nest egg</span>
+        </div>
+
+        <div class="fn-field" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <label style="color: var(--accent);">Required Annual Return</label>
+          <div style="font-size: 32px; font-weight: 800; color: var(--accent); margin-top: 4px;" id="spRequiredReturn">—</div>
+          <span class="hint" id="spRequiredReturnHint">Your Freedom Number and these three inputs determine this rate.</span>
+        </div>
+      </div>
+
       <!-- RESULT -->
       <div class="fn-result">
         <div class="fn-label">Your Freedom Number</div>
@@ -1134,7 +1167,12 @@
       incRental: 0,
       incPartTime: 0,
       wdRate: 0.04,
-      calculatedFN: 0
+      // Starting point
+      spSavings: 50000,
+      spMonthly: 500,
+      spYears: 15,
+      calculatedFN: 0,
+      calculatedRR: 0
     }
   };
   let _assetMetrics = {};
@@ -1227,6 +1265,9 @@
     document.getElementById('incRental').value = fn.incRental;
     document.getElementById('incPartTime').value = fn.incPartTime;
     document.getElementById('wdRate').value = fn.wdRate;
+    document.getElementById('spSavings').value = fn.spSavings;
+    document.getElementById('spMonthly').value = fn.spMonthly;
+    document.getElementById('spYears').value = fn.spYears;
 
     // Apply mode toggle
     if (fn.expMode === 'detailed') {
@@ -1276,6 +1317,29 @@
     };
   }
 
+  function calcRequiredReturnFromFN(freedomNumber, startingBalance, monthlyBudget, years) {
+    if (freedomNumber <= 0 || years <= 0) return 0;
+    if (startingBalance >= freedomNumber) return 0; // already there
+    if (monthlyBudget <= 0 && startingBalance <= 0) return 1; // impossible, max out
+
+    // Binary search for required annual return
+    let low = 0, high = 1; // 0% to 100%
+    for (let i = 0; i < 60; i++) {
+      const mid = (low + high) / 2;
+      let balance = startingBalance;
+      const annual = monthlyBudget * 12;
+      for (let y = 0; y < years; y++) {
+        balance = balance + annual + (balance + annual) * mid;
+      }
+      if (Math.abs(balance - freedomNumber) / freedomNumber < 0.001) {
+        return mid;
+      }
+      if (balance < freedomNumber) low = mid;
+      else high = mid;
+    }
+    return (low + high) / 2;
+  }
+
   function renderFreedomNumber() {
     const result = calcFreedomNumber();
     _settings.fn.calculatedFN = result.freedomNumber;
@@ -1306,6 +1370,38 @@
       <div class="fn-math-row"><span>÷ Withdrawal rate</span><span>÷ ${wdRatePct}%</span></div>
       <div class="fn-math-row fn-math-total"><span>= Freedom Number</span><span>$${result.freedomNumber.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
     `;
+
+    // Live-compute Required Return from Section 3 inputs
+    const fn = _settings.fn;
+    const rrDecimal = calcRequiredReturnFromFN(
+      result.freedomNumber,
+      fn.spSavings,
+      fn.spMonthly,
+      fn.spYears
+    );
+    const rrPct = Math.round(rrDecimal * 100);
+    _settings.fn.calculatedRR = rrPct;
+
+    const rrEl = document.getElementById('spRequiredReturn');
+    const rrHintEl = document.getElementById('spRequiredReturnHint');
+    if (rrEl) {
+      if (result.freedomNumber === 0) {
+        rrEl.textContent = '—';
+        rrHintEl.textContent = 'Set your Freedom Number first.';
+      } else if (fn.spSavings >= result.freedomNumber) {
+        rrEl.textContent = '0%';
+        rrEl.style.color = 'var(--green)';
+        rrHintEl.innerHTML = `You already have <strong>${'$' + fn.spSavings.toLocaleString()}</strong> saved, which meets your Freedom Number. You\u2019re there.`;
+      } else if (rrPct >= 100) {
+        rrEl.textContent = '100%+';
+        rrEl.style.color = 'var(--red)';
+        rrHintEl.innerHTML = `No realistic asset delivers this. Consider: more years, higher monthly investment, or a lower Freedom Number target.`;
+      } else {
+        rrEl.textContent = rrPct + '%';
+        rrEl.style.color = rrPct <= 12 ? 'var(--green)' : rrPct <= 22 ? 'var(--accent)' : 'var(--red)';
+        rrHintEl.innerHTML = `Starting with <strong>$${fn.spSavings.toLocaleString()}</strong> and adding <strong>$${fn.spMonthly.toLocaleString()}/mo</strong> for <strong>${fn.spYears} years</strong>, you need <strong>${rrPct}%</strong> annually.`;
+      }
+    }
   }
 
   function onFNInput() {
@@ -1325,6 +1421,9 @@
     fn.incRental = parseFloat(document.getElementById('incRental').value) || 0;
     fn.incPartTime = parseFloat(document.getElementById('incPartTime').value) || 0;
     fn.wdRate = parseFloat(document.getElementById('wdRate').value) || 0.04;
+    fn.spSavings = parseFloat(document.getElementById('spSavings').value) || 0;
+    fn.spMonthly = parseFloat(document.getElementById('spMonthly').value) || 0;
+    fn.spYears = parseInt(document.getElementById('spYears').value) || 1;
 
     renderFreedomNumber();
     debounceSave();
@@ -1332,40 +1431,16 @@
 
   function useFreedomNumberInPlan() {
     const fn = _settings.fn;
-    const freedomNumber = fn.calculatedFN;
-    if (freedomNumber <= 0) {
-      alert('Calculate your Freedom Number first by filling in the fields.');
+    if (fn.calculatedFN <= 0) {
+      alert('Calculate your Freedom Number first by filling in the expense and income fields.');
       return;
     }
-    // Compute required return rate using the user's current budget + timeline
-    // Default: 15 years, $500/mo, starting from $0 (or existing current savings if they set it)
-    // We'll just feed it into the existing Required Return field with a simple approximation
-    // Actually, we'll just switch to Overview tab and let the user adjust their inputs there
-    // The Freedom Number itself becomes a display/anchor for their Required Return
-    // For now, compute a reasonable required return based on default assumptions:
-    const timeline = _settings.timeline;
-    const monthlyBudget = _settings.monthlyBudget;
-    const startingBalance = 0; // Could ask the user, but for now assume $0
 
-    // Binary search for required return
-    let low = 0, high = 1;
-    for (let i = 0; i < 50; i++) {
-      const mid = (low + high) / 2;
-      let balance = startingBalance;
-      const annual = monthlyBudget * 12;
-      for (let y = 0; y < timeline; y++) {
-        balance = balance + annual + (balance + annual) * mid;
-      }
-      if (Math.abs(balance - freedomNumber) / freedomNumber < 0.001) {
-        low = high = mid;
-        break;
-      }
-      if (balance < freedomNumber) low = mid;
-      else high = mid;
-    }
-    const requiredPct = Math.round(((low + high) / 2) * 100);
+    // Push the Section 3 values and computed Required Return into the main settings
+    _settings.requiredReturn = fn.calculatedRR || 15;
+    _settings.timeline = fn.spYears || 15;
+    _settings.monthlyBudget = fn.spMonthly || 500;
 
-    _settings.requiredReturn = requiredPct;
     populateInputs();
     computeAllMetrics();
     renderAll();
@@ -2598,7 +2673,7 @@
     });
 
     // Freedom Number Builder inputs
-    ['expMonthly','expHousing','expFood','expHealth','expTransport','expTravel','expOther','expLifestyle','incSocSec','incPension','incRental','incPartTime','wdRate'].forEach(id => {
+    ['expMonthly','expHousing','expFood','expHealth','expTransport','expTravel','expOther','expLifestyle','incSocSec','incPension','incRental','incPartTime','wdRate','spSavings','spMonthly','spYears'].forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', onFNInput);
       if (el && el.tagName === 'SELECT') el.addEventListener('change', onFNInput);
