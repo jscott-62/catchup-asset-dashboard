@@ -594,6 +594,184 @@
     margin-left: 8px;
   }
 
+  /* ===== FREEDOM NUMBER BUILDER ===== */
+  .fn-builder {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .fn-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .fn-section h3 {
+    font-size: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+  .fn-section .fn-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .fn-field {
+    margin-bottom: 14px;
+  }
+  .fn-field label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .fn-field input[type="number"],
+  .fn-field select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-size: 15px;
+    font-weight: 600;
+    outline: none;
+  }
+  .fn-field input[type="number"]:focus,
+  .fn-field select:focus {
+    border-color: var(--accent);
+  }
+  .fn-field .hint {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+    font-style: italic;
+  }
+  .fn-toggle {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .fn-toggle button {
+    flex: 1;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .fn-toggle button.active {
+    background: var(--accent);
+    color: var(--bg);
+    border-color: var(--accent);
+  }
+  .fn-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--muted);
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .fn-checkbox input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+  }
+  .fn-result {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.03));
+    border: 2px solid rgba(245, 158, 11, 0.4);
+    border-radius: 12px;
+    padding: 28px;
+    text-align: center;
+  }
+  .fn-result .fn-label {
+    font-size: 13px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    font-weight: 600;
+  }
+  .fn-result .fn-value {
+    font-size: 56px;
+    font-weight: 800;
+    color: var(--accent);
+    line-height: 1;
+    margin-bottom: 12px;
+  }
+  .fn-result .fn-breakdown {
+    font-size: 14px;
+    color: var(--text);
+    line-height: 1.7;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .fn-result .fn-breakdown strong {
+    color: var(--accent);
+  }
+  .fn-result .fn-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 20px;
+    flex-wrap: wrap;
+  }
+  .fn-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 12px 24px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .fn-btn:hover { opacity: 0.9; }
+  .fn-btn.secondary {
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .fn-math {
+    display: none;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    text-align: left;
+    font-size: 13px;
+    color: var(--muted);
+    font-family: ui-monospace, monospace;
+  }
+  .fn-math.show { display: block; }
+  .fn-math .fn-math-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+  }
+  .fn-math .fn-math-total {
+    border-top: 1px dashed var(--border);
+    margin-top: 4px;
+    padding-top: 8px;
+    color: var(--accent);
+    font-weight: 700;
+  }
+
   /* ===== DISCLAIMER ===== */
   .disclaimer {
     margin-top: 40px;
@@ -622,6 +800,8 @@
     .asset-grid { grid-template-columns: 1fr; }
     .portfolio-grid { grid-template-columns: 1fr; }
     .custom-ticker-bar { flex-wrap: wrap; }
+    .fn-builder { grid-template-columns: 1fr; }
+    .fn-result .fn-value { font-size: 42px; }
   }
   @media (max-width: 480px) {
     body { padding: 12px; }
@@ -673,14 +853,143 @@
 
   <!-- TABS -->
   <div class="tabs">
-    <button class="tab-btn active" data-tab="overview">Overview</button>
-    <button class="tab-btn" data-tab="compare">Compare</button>
-    <button class="tab-btn" data-tab="dca">DCA Simulator</button>
-    <button class="tab-btn" data-tab="portfolio">Portfolio Builder</button>
+    <button class="tab-btn active" data-tab="freedom">1. Freedom Number</button>
+    <button class="tab-btn" data-tab="overview">2. Overview</button>
+    <button class="tab-btn" data-tab="compare">3. Compare</button>
+    <button class="tab-btn" data-tab="dca">4. DCA Simulator</button>
+    <button class="tab-btn" data-tab="portfolio">5. Portfolio Builder</button>
+  </div>
+
+  <!-- TAB: FREEDOM NUMBER BUILDER -->
+  <div class="tab-content active" id="tab-freedom">
+    <div style="margin-bottom: 20px; padding: 16px 20px; background: rgba(245, 158, 11, 0.06); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px;">
+      <strong style="color: var(--accent);">Your Freedom Number</strong> is the total amount you need saved by retirement to live comfortably. Most calculators make you guess at it. This one helps you build it from the ground up using the 4% rule, adjusted for your real inputs.
+    </div>
+
+    <div class="fn-builder">
+      <!-- SECTION 1: Expenses -->
+      <div class="fn-section">
+        <h3>1. Annual Retirement Expenses</h3>
+        <p class="fn-sub">How much will your life cost per year in retirement? Most people spend 70-80% of what they spend today.</p>
+
+        <div class="fn-toggle">
+          <button id="expToggleSimple" class="active">Simple</button>
+          <button id="expToggleDetailed">Break it down</button>
+        </div>
+
+        <!-- Simple mode -->
+        <div id="expSimpleMode">
+          <div class="fn-field">
+            <label>Monthly Expenses in Retirement</label>
+            <input type="number" id="expMonthly" min="500" max="50000" step="100" value="6000">
+            <span class="hint">$/month you'll need to cover all retirement spending</span>
+          </div>
+        </div>
+
+        <!-- Detailed mode (hidden by default) -->
+        <div id="expDetailedMode" style="display:none;">
+          <div class="fn-field">
+            <label>Housing (rent, mortgage, taxes, insurance)</label>
+            <input type="number" id="expHousing" min="0" step="50" value="2000">
+          </div>
+          <div class="fn-field">
+            <label>Food &amp; Groceries</label>
+            <input type="number" id="expFood" min="0" step="50" value="800">
+          </div>
+          <div class="fn-field">
+            <label>Healthcare &amp; Insurance</label>
+            <input type="number" id="expHealth" min="0" step="50" value="1200">
+            <span class="hint">Healthcare costs rise significantly in retirement</span>
+          </div>
+          <div class="fn-field">
+            <label>Transportation</label>
+            <input type="number" id="expTransport" min="0" step="50" value="500">
+          </div>
+          <div class="fn-field">
+            <label>Travel &amp; Lifestyle</label>
+            <input type="number" id="expTravel" min="0" step="50" value="800">
+            <span class="hint">What makes retirement worth it</span>
+          </div>
+          <div class="fn-field">
+            <label>Other (subscriptions, hobbies, pets)</label>
+            <input type="number" id="expOther" min="0" step="50" value="500">
+          </div>
+        </div>
+
+        <div class="fn-field" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <label>Retirement Lifestyle Factor</label>
+          <select id="expLifestyle">
+            <option value="0.70">Lower than today (70%)</option>
+            <option value="0.80">Slightly lower (80%)</option>
+            <option value="1.00" selected>Similar to today (100%)</option>
+            <option value="1.10">Slightly higher (110%)</option>
+            <option value="1.20">Higher than today (120%)</option>
+          </select>
+          <span class="hint">Most people spend 70-80% of current expenses in retirement, but YOU decide</span>
+        </div>
+      </div>
+
+      <!-- SECTION 2: Social Security + Other Income -->
+      <div class="fn-section">
+        <h3>2. Guaranteed Income in Retirement</h3>
+        <p class="fn-sub">Every dollar of guaranteed income is a dollar your savings doesn't have to produce. This is why including these is critical.</p>
+
+        <div class="fn-field">
+          <label>Social Security (monthly)</label>
+          <input type="number" id="incSocSec" min="0" max="10000" step="50" value="1800">
+          <span class="hint">Look it up at ssa.gov/myaccount. Average is around $1,800.</span>
+        </div>
+
+        <label class="fn-checkbox">
+          <input type="checkbox" id="incSkipSS">
+          I don't want to count on Social Security
+        </label>
+
+        <div class="fn-field" style="margin-top: 16px;">
+          <label>Pension (monthly, if any)</label>
+          <input type="number" id="incPension" min="0" step="50" value="0">
+        </div>
+
+        <div class="fn-field">
+          <label>Rental Income (monthly, if any)</label>
+          <input type="number" id="incRental" min="0" step="50" value="0">
+        </div>
+
+        <div class="fn-field">
+          <label>Part-Time Work Income (monthly)</label>
+          <input type="number" id="incPartTime" min="0" step="50" value="0">
+          <span class="hint">Many retirees work part-time for the first 5-10 years</span>
+        </div>
+
+        <div class="fn-field" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
+          <label>Withdrawal Rate</label>
+          <select id="wdRate">
+            <option value="0.03">3% — Very Conservative (40+ year retirement, crash-resistant)</option>
+            <option value="0.04" selected>4% — Standard (Trinity Study, 30-year retirement)</option>
+            <option value="0.05">5% — Aggressive (shorter retirement, comfortable with risk)</option>
+          </select>
+          <span class="hint">Lower rate = higher Freedom Number but more safety. Higher rate = lower target but more risk of running out.</span>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <div class="fn-result">
+        <div class="fn-label">Your Freedom Number</div>
+        <div class="fn-value" id="fnValue">$0</div>
+        <div class="fn-breakdown" id="fnBreakdown">
+          Fill in the fields above to calculate your personalized Freedom Number.
+        </div>
+        <div class="fn-actions">
+          <button class="fn-btn" id="fnUseInPlan">Use This in My Catch-Up Plan →</button>
+          <button class="fn-btn secondary" id="fnShowMath">Show the Math</button>
+        </div>
+        <div class="fn-math" id="fnMath"></div>
+      </div>
+    </div>
   </div>
 
   <!-- TAB: OVERVIEW -->
-  <div class="tab-content active" id="tab-overview">
+  <div class="tab-content" id="tab-overview">
     <div class="selection-bar">
       <div class="selection-count" id="selectionCount">
         Select assets to compare. <strong>0 selected</strong>
@@ -803,11 +1112,30 @@
     requiredReturn: 22,
     timeline: 15,
     monthlyBudget: 500,
-    activeTab: 'overview',
+    activeTab: 'freedom',
     compareTimeframe: 10,
     portfolioAllocations: {},
     customTickers: [],
-    selectedAssets: []
+    selectedAssets: [],
+    // Freedom Number Builder state
+    fn: {
+      expMode: 'simple',
+      expMonthly: 6000,
+      expHousing: 2000,
+      expFood: 800,
+      expHealth: 1200,
+      expTransport: 500,
+      expTravel: 800,
+      expOther: 500,
+      expLifestyle: 1.00,
+      incSocSec: 1800,
+      incSkipSS: false,
+      incPension: 0,
+      incRental: 0,
+      incPartTime: 0,
+      wdRate: 0.04,
+      calculatedFN: 0
+    }
   };
   let _assetMetrics = {};
   let _activeAssets = [];
@@ -833,9 +1161,11 @@
     loadCachedAssets();
     loadSettings();
     populateInputs();
+    populateFNInputs();
     computeAllMetrics();
     renderAll();
     bindEvents();
+    renderFreedomNumber();
   }
 
   // --- Settings (localStorage) ---
@@ -878,6 +1208,172 @@
     document.getElementById('inputReturn').value = _settings.requiredReturn;
     document.getElementById('inputTimeline').value = _settings.timeline;
     document.getElementById('inputBudget').value = _settings.monthlyBudget;
+  }
+
+  // --- Freedom Number Builder ---
+  function populateFNInputs() {
+    const fn = _settings.fn;
+    document.getElementById('expMonthly').value = fn.expMonthly;
+    document.getElementById('expHousing').value = fn.expHousing;
+    document.getElementById('expFood').value = fn.expFood;
+    document.getElementById('expHealth').value = fn.expHealth;
+    document.getElementById('expTransport').value = fn.expTransport;
+    document.getElementById('expTravel').value = fn.expTravel;
+    document.getElementById('expOther').value = fn.expOther;
+    document.getElementById('expLifestyle').value = fn.expLifestyle;
+    document.getElementById('incSocSec').value = fn.incSocSec;
+    document.getElementById('incSkipSS').checked = fn.incSkipSS;
+    document.getElementById('incPension').value = fn.incPension;
+    document.getElementById('incRental').value = fn.incRental;
+    document.getElementById('incPartTime').value = fn.incPartTime;
+    document.getElementById('wdRate').value = fn.wdRate;
+
+    // Apply mode toggle
+    if (fn.expMode === 'detailed') {
+      document.getElementById('expToggleSimple').classList.remove('active');
+      document.getElementById('expToggleDetailed').classList.add('active');
+      document.getElementById('expSimpleMode').style.display = 'none';
+      document.getElementById('expDetailedMode').style.display = 'block';
+    }
+  }
+
+  function calcFreedomNumber() {
+    const fn = _settings.fn;
+
+    // Calculate monthly expenses based on mode
+    let monthlyExpenses;
+    if (fn.expMode === 'detailed') {
+      monthlyExpenses = (fn.expHousing || 0) + (fn.expFood || 0) + (fn.expHealth || 0)
+        + (fn.expTransport || 0) + (fn.expTravel || 0) + (fn.expOther || 0);
+    } else {
+      monthlyExpenses = fn.expMonthly || 0;
+    }
+
+    // Apply lifestyle factor
+    const adjustedMonthly = monthlyExpenses * (fn.expLifestyle || 1);
+    const annualExpenses = adjustedMonthly * 12;
+
+    // Sum guaranteed income (zero out SS if skipping)
+    const monthlySS = fn.incSkipSS ? 0 : (fn.incSocSec || 0);
+    const monthlyIncome = monthlySS + (fn.incPension || 0) + (fn.incRental || 0) + (fn.incPartTime || 0);
+    const annualIncome = monthlyIncome * 12;
+
+    // Gap that savings must cover
+    const annualGap = Math.max(0, annualExpenses - annualIncome);
+
+    // Freedom Number = gap / withdrawal rate
+    const freedomNumber = annualGap / (fn.wdRate || 0.04);
+
+    return {
+      monthlyExpenses,
+      adjustedMonthly,
+      annualExpenses,
+      monthlySS,
+      monthlyIncome,
+      annualIncome,
+      annualGap,
+      freedomNumber
+    };
+  }
+
+  function renderFreedomNumber() {
+    const result = calcFreedomNumber();
+    _settings.fn.calculatedFN = result.freedomNumber;
+
+    const valueEl = document.getElementById('fnValue');
+    const breakdownEl = document.getElementById('fnBreakdown');
+    const mathEl = document.getElementById('fnMath');
+
+    if (!valueEl) return;
+
+    valueEl.textContent = '$' + result.freedomNumber.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+    const wdRatePct = (_settings.fn.wdRate * 100).toFixed(0);
+    if (result.freedomNumber === 0) {
+      breakdownEl.innerHTML = 'Your guaranteed income covers your expenses. You technically don\'t need savings to retire, though a cushion is always smart.';
+    } else {
+      breakdownEl.innerHTML = `Based on <strong>$${result.annualExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}/year</strong> in retirement expenses, <strong>$${result.annualIncome.toLocaleString(undefined, {maximumFractionDigits: 0})}/year</strong> in guaranteed income, and a <strong>${wdRatePct}% withdrawal rate</strong>.`;
+    }
+
+    // Update math breakdown
+    mathEl.innerHTML = `
+      <div class="fn-math-row"><span>Monthly expenses (raw)</span><span>$${result.monthlyExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>Lifestyle factor</span><span>× ${(_settings.fn.expLifestyle * 100).toFixed(0)}%</span></div>
+      <div class="fn-math-row"><span>Adjusted monthly</span><span>$${result.adjustedMonthly.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>Annual expenses</span><span>$${result.annualExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span style="color:var(--green)">- Annual guaranteed income</span><span style="color:var(--green)">-$${result.annualIncome.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>Annual gap (what savings must cover)</span><span>$${result.annualGap.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>÷ Withdrawal rate</span><span>÷ ${wdRatePct}%</span></div>
+      <div class="fn-math-row fn-math-total"><span>= Freedom Number</span><span>$${result.freedomNumber.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+    `;
+  }
+
+  function onFNInput() {
+    // Read all inputs into _settings.fn
+    const fn = _settings.fn;
+    fn.expMonthly = parseFloat(document.getElementById('expMonthly').value) || 0;
+    fn.expHousing = parseFloat(document.getElementById('expHousing').value) || 0;
+    fn.expFood = parseFloat(document.getElementById('expFood').value) || 0;
+    fn.expHealth = parseFloat(document.getElementById('expHealth').value) || 0;
+    fn.expTransport = parseFloat(document.getElementById('expTransport').value) || 0;
+    fn.expTravel = parseFloat(document.getElementById('expTravel').value) || 0;
+    fn.expOther = parseFloat(document.getElementById('expOther').value) || 0;
+    fn.expLifestyle = parseFloat(document.getElementById('expLifestyle').value) || 1;
+    fn.incSocSec = parseFloat(document.getElementById('incSocSec').value) || 0;
+    fn.incSkipSS = document.getElementById('incSkipSS').checked;
+    fn.incPension = parseFloat(document.getElementById('incPension').value) || 0;
+    fn.incRental = parseFloat(document.getElementById('incRental').value) || 0;
+    fn.incPartTime = parseFloat(document.getElementById('incPartTime').value) || 0;
+    fn.wdRate = parseFloat(document.getElementById('wdRate').value) || 0.04;
+
+    renderFreedomNumber();
+    debounceSave();
+  }
+
+  function useFreedomNumberInPlan() {
+    const fn = _settings.fn;
+    const freedomNumber = fn.calculatedFN;
+    if (freedomNumber <= 0) {
+      alert('Calculate your Freedom Number first by filling in the fields.');
+      return;
+    }
+    // Compute required return rate using the user's current budget + timeline
+    // Default: 15 years, $500/mo, starting from $0 (or existing current savings if they set it)
+    // We'll just feed it into the existing Required Return field with a simple approximation
+    // Actually, we'll just switch to Overview tab and let the user adjust their inputs there
+    // The Freedom Number itself becomes a display/anchor for their Required Return
+    // For now, compute a reasonable required return based on default assumptions:
+    const timeline = _settings.timeline;
+    const monthlyBudget = _settings.monthlyBudget;
+    const startingBalance = 0; // Could ask the user, but for now assume $0
+
+    // Binary search for required return
+    let low = 0, high = 1;
+    for (let i = 0; i < 50; i++) {
+      const mid = (low + high) / 2;
+      let balance = startingBalance;
+      const annual = monthlyBudget * 12;
+      for (let y = 0; y < timeline; y++) {
+        balance = balance + annual + (balance + annual) * mid;
+      }
+      if (Math.abs(balance - freedomNumber) / freedomNumber < 0.001) {
+        low = high = mid;
+        break;
+      }
+      if (balance < freedomNumber) low = mid;
+      else high = mid;
+    }
+    const requiredPct = Math.round(((low + high) / 2) * 100);
+
+    _settings.requiredReturn = requiredPct;
+    populateInputs();
+    computeAllMetrics();
+    renderAll();
+    debounceSave();
+
+    // Switch to Overview tab
+    const btn = document.querySelector('.tab-btn[data-tab="overview"]');
+    if (btn) btn.click();
   }
 
   // --- Financial Calculations ---
@@ -2101,6 +2597,42 @@
       });
     });
 
+    // Freedom Number Builder inputs
+    ['expMonthly','expHousing','expFood','expHealth','expTransport','expTravel','expOther','expLifestyle','incSocSec','incPension','incRental','incPartTime','wdRate'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', onFNInput);
+      if (el && el.tagName === 'SELECT') el.addEventListener('change', onFNInput);
+    });
+    document.getElementById('incSkipSS').addEventListener('change', onFNInput);
+
+    // FN mode toggle
+    document.getElementById('expToggleSimple').addEventListener('click', () => {
+      _settings.fn.expMode = 'simple';
+      document.getElementById('expToggleSimple').classList.add('active');
+      document.getElementById('expToggleDetailed').classList.remove('active');
+      document.getElementById('expSimpleMode').style.display = 'block';
+      document.getElementById('expDetailedMode').style.display = 'none';
+      renderFreedomNumber();
+      debounceSave();
+    });
+    document.getElementById('expToggleDetailed').addEventListener('click', () => {
+      _settings.fn.expMode = 'detailed';
+      document.getElementById('expToggleSimple').classList.remove('active');
+      document.getElementById('expToggleDetailed').classList.add('active');
+      document.getElementById('expSimpleMode').style.display = 'none';
+      document.getElementById('expDetailedMode').style.display = 'block';
+      renderFreedomNumber();
+      debounceSave();
+    });
+
+    // FN action buttons
+    document.getElementById('fnUseInPlan').addEventListener('click', useFreedomNumberInPlan);
+    document.getElementById('fnShowMath').addEventListener('click', () => {
+      const mathEl = document.getElementById('fnMath');
+      mathEl.classList.toggle('show');
+      document.getElementById('fnShowMath').textContent = mathEl.classList.contains('show') ? 'Hide the Math' : 'Show the Math';
+    });
+
     // Custom ticker
     document.getElementById('addTickerBtn').addEventListener('click', addCustomTicker);
     document.getElementById('customTickerInput').addEventListener('keypress', e => {
@@ -2114,16 +2646,14 @@
       resizeTimer = setTimeout(renderCompareCharts, 200);
     });
 
-    // Restore active tab
-    if (_settings.activeTab !== 'overview') {
+    // Restore active tab (default is 'freedom')
+    if (_settings.activeTab && _settings.activeTab !== 'freedom') {
       const btn = document.querySelector(`.tab-btn[data-tab="${_settings.activeTab}"]`);
       if (btn) {
-        // Apply tab visibility first
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         btn.classList.add('active');
         document.getElementById('tab-' + _settings.activeTab).classList.add('active');
-        // Then render charts after CSS takes effect
         if (_settings.activeTab === 'compare') {
           setTimeout(renderCompareCharts, 200);
         }
