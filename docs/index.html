@@ -951,8 +951,8 @@
     <div class="fn-builder">
       <!-- SECTION 1: Expenses -->
       <div class="fn-section">
-        <h3>1. Annual Retirement Expenses</h3>
-        <p class="fn-sub">How much will your life cost per year in retirement? Most people spend 70-80% of what they spend today.</p>
+        <h3>1. Your Current Expenses</h3>
+        <p class="fn-sub">What do you spend TODAY? Start with your current monthly expenses. The Retirement Adjustment below will tune this for your retirement years.</p>
 
         <div class="fn-toggle">
           <button id="expToggleSimple" class="active">Simple</button>
@@ -962,16 +962,16 @@
         <!-- Simple mode -->
         <div id="expSimpleMode">
           <div class="fn-field">
-            <label>Monthly Expenses in Retirement</label>
+            <label>Current Monthly Expenses</label>
             <input type="number" id="expMonthly" min="500" max="50000" step="100" value="6000">
-            <span class="hint">$/month you'll need to cover all retirement spending</span>
+            <span class="hint">What you spend per month right now on everything</span>
           </div>
         </div>
 
         <!-- Detailed mode (hidden by default) -->
         <div id="expDetailedMode" style="display:none;">
           <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 12px; padding: 8px 12px; background: rgba(245, 158, 11, 0.08); border-radius: 6px;">
-            Enter <strong>monthly</strong> amounts for each category. We'll multiply by 12 to get your annual total.
+            Enter your <strong>current monthly</strong> spending by category. We'll multiply by 12 for the annual total, then the Retirement Adjustment below tunes it for your retirement years.
           </div>
           <div class="fn-field">
             <label>Housing ($/month)</label>
@@ -1008,15 +1008,15 @@
         </div>
 
         <div class="fn-field" style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border);">
-          <label>Retirement Lifestyle Factor</label>
+          <label>Retirement Adjustment</label>
           <select id="expLifestyle">
-            <option value="0.70">Lower than today (70%)</option>
-            <option value="0.80">Slightly lower (80%)</option>
-            <option value="1.00" selected>Similar to today (100%)</option>
-            <option value="1.10">Slightly higher (110%)</option>
-            <option value="1.20">Higher than today (120%)</option>
+            <option value="0.70">I'll spend less (70% of today)</option>
+            <option value="0.80" selected>I'll spend slightly less (80% of today)</option>
+            <option value="1.00">I'll spend about the same (100%)</option>
+            <option value="1.10">I'll spend slightly more (110%)</option>
+            <option value="1.20">I'll spend more (120% of today)</option>
           </select>
-          <span class="hint">Most people spend 70-80% of current expenses in retirement, but YOU decide</span>
+          <span class="hint">Most retirees spend 70-80% of what they spend now (no commute, kids grown, mortgage often paid). But healthcare goes UP, and travel might too. Adjust based on YOUR plans.</span>
         </div>
       </div>
 
@@ -1248,7 +1248,7 @@
       expTransport: 500,
       expTravel: 800,
       expOther: 500,
-      expLifestyle: 1.00,
+      expLifestyle: 0.80,
       incSocSec: 1800,
       incSkipSS: false,
       incPension: 0,
@@ -1339,13 +1339,13 @@
     document.getElementById('expTransport').value = fn.expTransport;
     document.getElementById('expTravel').value = fn.expTravel;
     document.getElementById('expOther').value = fn.expOther;
-    document.getElementById('expLifestyle').value = fn.expLifestyle;
+    document.getElementById('expLifestyle').value = fn.expLifestyle.toFixed(2);
     document.getElementById('incSocSec').value = fn.incSocSec;
     document.getElementById('incSkipSS').checked = fn.incSkipSS;
     document.getElementById('incPension').value = fn.incPension;
     document.getElementById('incRental').value = fn.incRental;
     document.getElementById('incPartTime').value = fn.incPartTime;
-    document.getElementById('wdRate').value = fn.wdRate;
+    document.getElementById('wdRate').value = fn.wdRate.toFixed(2);
     document.getElementById('spSavings').value = fn.spSavings;
     document.getElementById('spMonthly').value = fn.spMonthly;
     document.getElementById('spYears').value = fn.spYears;
@@ -1448,10 +1448,10 @@
 
     // Update math breakdown
     mathEl.innerHTML = `
-      <div class="fn-math-row"><span>Monthly expenses (raw)</span><span>$${result.monthlyExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-      <div class="fn-math-row"><span>Lifestyle factor</span><span>× ${(_settings.fn.expLifestyle * 100).toFixed(0)}%</span></div>
-      <div class="fn-math-row"><span>Adjusted monthly</span><span>$${result.adjustedMonthly.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
-      <div class="fn-math-row"><span>Annual expenses</span><span>$${result.annualExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>Current monthly expenses</span><span>$${result.monthlyExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>× Retirement adjustment</span><span>× ${(_settings.fn.expLifestyle * 100).toFixed(0)}%</span></div>
+      <div class="fn-math-row"><span>Projected retirement monthly</span><span>$${result.adjustedMonthly.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
+      <div class="fn-math-row"><span>× 12 = Annual retirement expenses</span><span>$${result.annualExpenses.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
       <div class="fn-math-row"><span style="color:var(--green)">- Annual guaranteed income</span><span style="color:var(--green)">-$${result.annualIncome.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
       <div class="fn-math-row"><span>Annual gap (what savings must cover)</span><span>$${result.annualGap.toLocaleString(undefined, {maximumFractionDigits: 0})}</span></div>
       <div class="fn-math-row"><span>÷ Withdrawal rate</span><span>÷ ${wdRatePct}%</span></div>
