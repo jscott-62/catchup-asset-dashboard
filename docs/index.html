@@ -2118,9 +2118,17 @@
     const maxInvested = budget * maxLen;
     if (maxInvested > globalMax) globalMax = maxInvested;
 
-    // LOG SCALE so a $1.5M asset and a $115K asset are both clearly visible.
-    // yMin needs a floor so log(0) doesn't explode; use budget as natural floor
-    const yMin = Math.max(budget, 100);
+    // LOG SCALE, zoomed into the range where the interesting divergence happens.
+    // Without this, the bottom half of the chart would be empty (the early DCA
+    // months when all assets are just starting). We set yMin to 1/10 of the
+    // smallest final value, so the chart focuses on where the assets actually
+    // diverge. Early-month lines will still be visible at the bottom, but they
+    // won't hog half the vertical space.
+    const finalValues = datasets.map(ds => ds.points[ds.points.length - 1]);
+    const minFinal = Math.min(...finalValues);
+    // Also include maxInvested in the "interesting" range so the Invested baseline is visible
+    const yMinCandidate = Math.min(minFinal / 10, maxInvested / 4);
+    const yMin = Math.max(budget, yMinCandidate);
     const yMax = globalMax * 1.2;
     const logMin = Math.log10(yMin);
     const logMax = Math.log10(yMax);
