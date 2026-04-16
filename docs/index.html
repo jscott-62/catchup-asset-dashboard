@@ -1151,15 +1151,6 @@
     </div>
     <div class="card chart-container">
       <div class="chart-header">
-        <span class="chart-title">DCA Growth: Your Monthly Investment Over Time</span>
-      </div>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;" id="dcaChartSubtitle">
-        What <strong>$500</strong>/month invested consistently would have grown to. This is how YOUR journey would actually look.
-      </p>
-      <canvas id="dcaGrowthChart" height="400"></canvas>
-    </div>
-    <div class="card chart-container">
-      <div class="chart-header">
         <span class="chart-title">The Bumpy Ride: How Wide Is the Range?</span>
       </div>
       <p style="color:var(--muted);font-size:13px;margin-bottom:12px;">
@@ -1177,12 +1168,25 @@
 
   <!-- TAB: DCA SIMULATOR -->
   <div class="tab-content" id="tab-dca">
-    <div class="card">
+    <div class="card chart-container">
       <h2>Dollar-Cost Averaging Simulator</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
-        What if you had invested <strong id="dcaBudgetDisplay">$500</strong>/month consistently? Here's what historical DCA would have produced.
+        What if you had invested <strong id="dcaBudgetDisplay">$500</strong>/month consistently? This tab shows what your actual monthly investing would have produced, as a visual journey and in exact dollar figures.
       </p>
-      <div id="dcaResults"></div>
+      <div class="chart-header">
+        <span class="chart-title">DCA Growth Over Time</span>
+        <div class="timeframe-btns" id="dcaTimeframeBtns">
+          <button class="timeframe-btn dca-tf-btn" data-years="1">1Y</button>
+          <button class="timeframe-btn dca-tf-btn" data-years="3">3Y</button>
+          <button class="timeframe-btn dca-tf-btn" data-years="5">5Y</button>
+          <button class="timeframe-btn dca-tf-btn active" data-years="10">10Y</button>
+        </div>
+      </div>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:12px;" id="dcaChartSubtitle">
+        What <strong>$500</strong>/month invested consistently would have grown to. Each line&apos;s final value is labeled. <em>Y-axis uses log scale so high and moderate performers are both visible.</em>
+      </p>
+      <canvas id="dcaGrowthChart" height="400"></canvas>
+      <div id="dcaResults" style="margin-top: 24px;"></div>
     </div>
   </div>
 
@@ -1726,9 +1730,11 @@
     renderHeader();
     renderPlanSummary();
     renderAssetCards();
-    // Only render charts if compare tab is visible (canvas needs dimensions)
+    // Only render charts if their tab is visible (canvas needs dimensions)
     if (_settings.activeTab === 'compare') {
       setTimeout(renderCompareCharts, 100);
+    } else if (_settings.activeTab === 'dca') {
+      setTimeout(renderDCAGrowthChart, 100);
     }
     renderDCA();
     renderPortfolio();
@@ -1944,7 +1950,6 @@
 
   function renderCompareCharts() {
     renderReturnsChart();
-    renderDCAGrowthChart();
     renderVolatilityChart();
     renderDrawdownChart();
   }
@@ -2801,20 +2806,31 @@
           setTimeout(renderCompareCharts, 150);
         } else if (tab === 'dca') {
           renderDCA();
+          setTimeout(renderDCAGrowthChart, 150);
         } else if (tab === 'portfolio') {
           renderPortfolio();
         }
       });
     });
 
-    // Timeframe buttons
+    // Timeframe buttons (shared by Compare tab and DCA Simulator tab)
     document.querySelectorAll('.timeframe-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        _settings.compareTimeframe = parseInt(btn.dataset.years);
+        const years = parseInt(btn.dataset.years);
+        _settings.compareTimeframe = years;
+        // Sync all timeframe buttons across tabs so both sets match
+        document.querySelectorAll('.timeframe-btn').forEach(b => {
+          if (parseInt(b.dataset.years) === years) b.classList.add('active');
+          else b.classList.remove('active');
+        });
         debounceSave();
-        renderCompareCharts();
+        // Re-render whichever chart is currently visible
+        if (_settings.activeTab === 'dca') {
+          renderDCAGrowthChart();
+          renderDCA();
+        } else {
+          renderCompareCharts();
+        }
       });
     });
 
@@ -2902,11 +2918,14 @@
       if (e.key === 'Enter') addCustomTicker();
     });
 
-    // Window resize: redraw charts
+    // Window resize: redraw charts on whichever tab is active
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(renderCompareCharts, 200);
+      resizeTimer = setTimeout(() => {
+        if (_settings.activeTab === 'compare') renderCompareCharts();
+        else if (_settings.activeTab === 'dca') renderDCAGrowthChart();
+      }, 200);
     });
 
     // Restore active tab (default is 'freedom')
@@ -2919,17 +2938,19 @@
         document.getElementById('tab-' + _settings.activeTab).classList.add('active');
         if (_settings.activeTab === 'compare') {
           setTimeout(renderCompareCharts, 200);
+        } else if (_settings.activeTab === 'dca') {
+          setTimeout(renderDCAGrowthChart, 200);
         }
       }
     }
 
-    // Restore timeframe
+    // Restore timeframe - sync across all timeframe button sets
     if (_settings.compareTimeframe) {
-      const tfBtn = document.querySelector(`.timeframe-btn[data-years="${_settings.compareTimeframe}"]`);
-      if (tfBtn) {
-        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
-        tfBtn.classList.add('active');
-      }
+      const years = _settings.compareTimeframe;
+      document.querySelectorAll('.timeframe-btn').forEach(b => {
+        if (parseInt(b.dataset.years) === years) b.classList.add('active');
+        else b.classList.remove('active');
+      });
     }
   }
 
