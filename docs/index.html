@@ -970,31 +970,40 @@
 
         <!-- Detailed mode (hidden by default) -->
         <div id="expDetailedMode" style="display:none;">
-          <div class="fn-field">
-            <label>Housing (rent, mortgage, taxes, insurance)</label>
-            <input type="number" id="expHousing" min="0" step="50" value="2000">
+          <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 12px; padding: 8px 12px; background: rgba(245, 158, 11, 0.08); border-radius: 6px;">
+            Enter <strong>monthly</strong> amounts for each category. We'll multiply by 12 to get your annual total.
           </div>
           <div class="fn-field">
-            <label>Food &amp; Groceries</label>
+            <label>Housing ($/month)</label>
+            <input type="number" id="expHousing" min="0" step="50" value="2000">
+            <span class="hint">Rent or mortgage, property taxes, insurance, maintenance</span>
+          </div>
+          <div class="fn-field">
+            <label>Food &amp; Groceries ($/month)</label>
             <input type="number" id="expFood" min="0" step="50" value="800">
           </div>
           <div class="fn-field">
-            <label>Healthcare &amp; Insurance</label>
+            <label>Healthcare &amp; Insurance ($/month)</label>
             <input type="number" id="expHealth" min="0" step="50" value="1200">
             <span class="hint">Healthcare costs rise significantly in retirement</span>
           </div>
           <div class="fn-field">
-            <label>Transportation</label>
+            <label>Transportation ($/month)</label>
             <input type="number" id="expTransport" min="0" step="50" value="500">
           </div>
           <div class="fn-field">
-            <label>Travel &amp; Lifestyle</label>
+            <label>Travel &amp; Lifestyle ($/month)</label>
             <input type="number" id="expTravel" min="0" step="50" value="800">
             <span class="hint">What makes retirement worth it</span>
           </div>
           <div class="fn-field">
-            <label>Other (subscriptions, hobbies, pets)</label>
+            <label>Other ($/month)</label>
             <input type="number" id="expOther" min="0" step="50" value="500">
+            <span class="hint">Subscriptions, hobbies, pets, gifts</span>
+          </div>
+          <div class="fn-field" id="expDetailedTotal" style="padding: 10px 12px; background: var(--bg); border-radius: 6px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border);">
+            <span style="font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Total Monthly</span>
+            <span id="expDetailedTotalValue" style="font-size: 18px; font-weight: 700; color: var(--accent);">$5,800</span>
           </div>
         </div>
 
@@ -1423,6 +1432,12 @@
     if (!valueEl) return;
 
     valueEl.textContent = '$' + result.freedomNumber.toLocaleString(undefined, { maximumFractionDigits: 0 });
+
+    // Update the "Total Monthly" display in detailed mode
+    const totalEl = document.getElementById('expDetailedTotalValue');
+    if (totalEl) {
+      totalEl.textContent = '$' + result.monthlyExpenses.toLocaleString(undefined, { maximumFractionDigits: 0 });
+    }
 
     const wdRatePct = (_settings.fn.wdRate * 100).toFixed(0);
     if (result.freedomNumber === 0) {
