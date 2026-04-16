@@ -2573,32 +2573,33 @@
       return;
     }
 
-    let html = '';
-    [{ label: 'Last 5 Years (60 months)', months: 60 }, { label: 'Last 10 Years (120 months)', months: 120 }].forEach(period => {
-      html += `<div class="dca-period-header">${period.label}</div>`;
-      html += '<div class="dca-table-wrap"><table class="dca-table">';
-      html += '<thead><tr><th>Asset</th><th>Total Invested</th><th>Ending Value</th><th>Gain/Loss</th><th>Return %</th><th>Ann. Return</th></tr></thead><tbody>';
+    // Use the currently selected timeframe instead of showing both 5Y and 10Y
+    const years = _settings.compareTimeframe || 10;
+    const months = years * 12;
+    const label = `Last ${years} Year${years > 1 ? 's' : ''} (${months} months)`;
 
-      selected.forEach(key => {
-        const asset = _data.assets[key];
-        if (!asset) return;
-        const result = calcDCA(asset.monthlyPrices, budget, period.months);
-        if (!result) return;
+    let html = `<div class="dca-period-header">${label}</div>`;
+    html += '<div class="dca-table-wrap"><table class="dca-table">';
+    html += '<thead><tr><th>Asset</th><th>Total Invested</th><th>Ending Value</th><th>Gain/Loss</th><th>Return %</th><th>Ann. Return</th></tr></thead><tbody>';
 
-        const gainClass = result.totalGain >= 0 ? 'positive' : 'negative';
-        html += `<tr>
-          <td><span class="asset-dot" style="background:${asset.color}"></span>${asset.name}</td>
-          <td>$${formatNum(result.totalInvested)}</td>
-          <td style="font-weight:600">$${formatNum(result.endingValue)}</td>
-          <td class="${gainClass}" style="font-weight:600">${result.totalGain >= 0 ? '+' : ''}$${formatNum(result.totalGain)}</td>
-          <td class="${gainClass}">${result.gainPct >= 0 ? '+' : ''}${result.gainPct.toFixed(1)}%</td>
-          <td class="${gainClass}">${result.annualizedReturn.toFixed(1)}%</td>
-        </tr>`;
-      });
+    selected.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset) return;
+      const result = calcDCA(asset.monthlyPrices, budget, months);
+      if (!result) return;
 
-      html += '</tbody></table></div>';
+      const gainClass = result.totalGain >= 0 ? 'positive' : 'negative';
+      html += `<tr>
+        <td><span class="asset-dot" style="background:${asset.color}"></span>${asset.name}</td>
+        <td>$${formatNum(result.totalInvested)}</td>
+        <td style="font-weight:600">$${formatNum(result.endingValue)}</td>
+        <td class="${gainClass}" style="font-weight:600">${result.totalGain >= 0 ? '+' : ''}$${formatNum(result.totalGain)}</td>
+        <td class="${gainClass}">${result.gainPct >= 0 ? '+' : ''}${result.gainPct.toFixed(1)}%</td>
+        <td class="${gainClass}">${result.annualizedReturn.toFixed(1)}%</td>
+      </tr>`;
     });
 
+    html += '</tbody></table></div>';
     container.innerHTML = html;
   }
 
