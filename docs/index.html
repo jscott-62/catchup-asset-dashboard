@@ -2159,12 +2159,13 @@
       ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
     });
 
-    // Draw "total invested" baseline (dashed gray)
+    // Draw "total invested" baseline (dashed gray) — spans full timeframe
     ctx.strokeStyle = '#64748b';
     ctx.lineWidth = 2;
     ctx.setLineDash([6, 4]);
     ctx.beginPath();
     totalInvestedPoints.forEach((val, i) => {
+      // Invested line uses full maxLen span; goes from left edge to right edge
       const x = margin.left + (plotW * i / (maxLen - 1));
       const y = yFromVal(val);
       if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
@@ -2181,16 +2182,27 @@
     ctx.fillText('Invested $' + formatNum(maxInvested), invLastX + 6, invLastY + 4);
 
     // Draw asset lines with inline labels
+    // Assets have different histories (BTC 10yr, ETH 8.5yr, SOL 6yr), so we
+    // RIGHT-align every line to today's date. Shorter histories start later
+    // on the X-axis. Without this, SOL's line would appear to "stop in 2022"
+    // because 6 years of data got plotted starting from the left edge.
     datasets.sort((a, b) => b.points[b.points.length - 1] - a.points[a.points.length - 1]);
     const dcaLabelOffsets = [0.3, 0.5, 0.7, 0.4, 0.6, 0.8, 0.2, 0.9];
     const dcaEndLabels = [];
+
+    // Helper: X position based on months-from-end. The last point always
+    // lands at the right edge; earlier points step left by (1/maxLen) each.
+    function xFromIndex(i, totalLen) {
+      const monthsFromEnd = (totalLen - 1) - i;
+      return margin.left + plotW - (plotW * monthsFromEnd / (maxLen - 1));
+    }
 
     datasets.forEach((ds, dsIdx) => {
       ctx.strokeStyle = ds.color;
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ds.points.forEach((val, i) => {
-        const x = margin.left + (plotW * i / (maxLen - 1));
+        const x = xFromIndex(i, ds.points.length);
         const y = yFromVal(val);
         if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       });
@@ -2200,7 +2212,7 @@
       const labelPct = dcaLabelOffsets[dsIdx % dcaLabelOffsets.length];
       const labelIdx = Math.floor(ds.points.length * labelPct);
       if (labelIdx >= 0 && labelIdx < ds.points.length) {
-        const lx = margin.left + (plotW * labelIdx / (maxLen - 1));
+        const lx = xFromIndex(labelIdx, ds.points.length);
         const ly = yFromVal(ds.points[labelIdx]);
         ctx.font = 'bold 11px -apple-system, sans-serif';
         const textW = ctx.measureText(ds.key).width;
@@ -2217,21 +2229,22 @@
       dcaEndLabels.push({ y: naturalY, naturalY, text: ds.key + ' $' + formatNum(lastVal), color: ds.color });
     });
 
-    // Draw end labels with guaranteed spacing
-    const lineEndX = margin.left + (plotW * (datasets[0].points.length - 1) / (maxLen - 1));
+    // Draw end labels at the right edge of the plot (all lines end there now)
+    const lineEndX = margin.left + plotW;
     drawEndLabels(ctx, dcaEndLabels, lineEndX, margin);
 
-    // X-axis year labels
+    // X-axis year labels using the longest-running dataset so the full range shows
+    const longestDataset = datasets.reduce((a, b) => a.dates.length >= b.dates.length ? a : b);
+    const longestDates = longestDataset.dates;
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'center';
     ctx.font = '11px -apple-system, sans-serif';
-    const firstDates = datasets[0] ? datasets[0].dates : [];
     const yearsShown = new Set();
-    firstDates.forEach((date, i) => {
+    longestDates.forEach((date, i) => {
       const year = date.substring(0, 4);
       if (!yearsShown.has(year)) {
         yearsShown.add(year);
-        const x = margin.left + (plotW * i / (maxLen - 1));
+        const x = xFromIndex(i, longestDates.length);
         ctx.fillText(year, x, h - margin.bottom + 18);
       }
     });
