@@ -2079,7 +2079,7 @@
     const years = _settings.compareTimeframe || 10;
     const months = years * 12;
     const subtitleEl = document.getElementById('dcaChartSubtitle');
-    if (subtitleEl) subtitleEl.innerHTML = 'What <strong>$' + budget.toLocaleString() + '</strong>/month invested over the last <strong>' + years + ' year' + (years > 1 ? 's' : '') + '</strong> would have grown to. This is how YOUR journey would actually look.';
+    if (subtitleEl) subtitleEl.innerHTML = 'What <strong>$' + budget.toLocaleString() + '</strong>/month invested over the last <strong>' + years + ' year' + (years > 1 ? 's' : '') + '</strong> would have grown to. Each line\'s final value is labeled. <em>Y-axis uses log scale so high and moderate performers are both visible.</em>';
 
     // Simulate DCA for each selected asset over the selected timeframe
     const datasets = [];
@@ -2118,30 +2118,38 @@
     const maxInvested = budget * maxLen;
     if (maxInvested > globalMax) globalMax = maxInvested;
 
-    // LINEAR SCALE starting from 0
-    const yMax = globalMax * 1.1;
+    // LOG SCALE so a $1.5M asset and a $115K asset are both clearly visible.
+    // yMin needs a floor so log(0) doesn't explode; use budget as natural floor
+    const yMin = Math.max(budget, 100);
+    const yMax = globalMax * 1.2;
+    const logMin = Math.log10(yMin);
+    const logMax = Math.log10(yMax);
+    const logRange = logMax - logMin;
 
     function yFromVal(val) {
-      return margin.top + plotH - (plotH * val / yMax);
+      const clamped = Math.max(yMin, val);
+      const logVal = Math.log10(clamped);
+      return margin.top + plotH - (plotH * (logVal - logMin) / logRange);
     }
 
-    // Grid lines
+    // Grid lines at natural dollar milestones
     ctx.strokeStyle = '#334155';
     ctx.lineWidth = 0.5;
     ctx.font = '12px -apple-system, sans-serif';
     ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'right';
 
-    const gridSteps = 5;
-    for (let i = 0; i <= gridSteps; i++) {
-      const val = (yMax / gridSteps) * i;
+    // Generate nice gridlines: 500, 1K, 2K, 5K, 10K, 20K, 50K, 100K, 200K, 500K, 1M, 2M, 5M
+    const gridValues = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000, 200000, 500000, 1000000, 2000000, 5000000, 10000000];
+    gridValues.forEach(val => {
+      if (val < yMin * 0.95 || val > yMax * 1.05) return;
       const y = yFromVal(val);
       ctx.beginPath();
       ctx.moveTo(margin.left, y);
       ctx.lineTo(w - margin.right, y);
       ctx.stroke();
       ctx.fillText('$' + formatNum(val), margin.left - 8, y + 4);
-    }
+    });
 
     // Draw "total invested" baseline (dashed gray)
     ctx.strokeStyle = '#64748b';
@@ -2275,17 +2283,19 @@
 
     if (assets.length === 0) return;
 
-    // Use a CAPPED visible range so outliers don't squish everything
-    // Find the median best/worst to set a sensible window
+    // Use the MEDIAN best/worst to set the visible range (not max/min), so a
+    // single extreme outlier (like Solana's +13,000%) can't blow up the scale.
+    // Then any values outside the visible range show with clipping arrows.
     const allBests = assets.map(a => a.best).sort((a, b) => a - b);
     const allWorsts = assets.map(a => a.worst).sort((a, b) => a - b);
-    // Use the 75th percentile best and 25th percentile worst as the "natural" range
-    // then add 30% padding
-    const p75best = allBests[Math.floor(allBests.length * 0.75)] || allBests[allBests.length - 1];
-    const p25worst = allWorsts[Math.floor(allWorsts.length * 0.25)] || allWorsts[0];
+    const medianBest = allBests[Math.floor(allBests.length / 2)];
+    const medianWorst = allWorsts[Math.floor(allWorsts.length / 2)];
 
-    const visibleMax = Math.max(p75best * 1.4, _settings.requiredReturn * 1.3, 50);
-    const visibleMin = Math.min(p25worst * 1.4, -20);
+    // Visible window: generous around the median but hard cap so it stays readable.
+    // If median best is 100%, show up to ~200%. If median best is 500%, show up to ~750%.
+    // Hard cap at 500% no matter what, so SOL's 13,044% always gets an arrow.
+    const visibleMax = Math.min(500, Math.max(medianBest * 2, _settings.requiredReturn * 1.5, 50));
+    const visibleMin = Math.max(-100, Math.min(medianWorst * 1.5, -20));
     const range = visibleMax - visibleMin;
 
     function yFromVal(val) {
