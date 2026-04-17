@@ -123,6 +123,13 @@ DEFAULT_ASSETS = {
         "color": "#00c08b",
         "source": "yahoo"
     },
+    "TAO": {
+        "ticker": "TAO22974-USD",
+        "name": "Bittensor (TAO)",
+        "category": "Cryptocurrency",
+        "color": "#ff5d1f",
+        "source": "yahoo"
+    },
     # --- Traditional Assets ---
     "GLD": {
         "ticker": "GLD",
