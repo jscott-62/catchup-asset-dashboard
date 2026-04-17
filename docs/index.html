@@ -884,6 +884,163 @@
   }
   .disclaimer strong { color: var(--red); }
 
+  /* ===== MY PORTFOLIO ===== */
+  .holding-row {
+    display: grid;
+    grid-template-columns: 2.5fr 1.5fr 1.5fr 1.5fr auto;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+  }
+  .holding-header {
+    display: grid;
+    grid-template-columns: 2.5fr 1.5fr 1.5fr 1.5fr auto;
+    gap: 12px;
+    padding: 0 12px 6px;
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .holding-row select,
+  .holding-row input {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 500;
+    width: 100%;
+    outline: none;
+  }
+  .holding-row select:focus,
+  .holding-row input:focus {
+    border-color: var(--accent);
+  }
+  .holding-row .holding-price,
+  .holding-row .holding-value {
+    padding: 8px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .holding-row .holding-remove {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .holding-row .holding-remove:hover {
+    color: var(--red);
+    border-color: var(--red);
+  }
+
+  .portfolio-summary {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    margin-top: 16px;
+  }
+  .portfolio-summary h3 {
+    font-size: 14px;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+  .portfolio-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .portfolio-total .label {
+    color: var(--muted);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+  }
+  .portfolio-total .value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .allocation-bar {
+    display: flex;
+    height: 28px;
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 14px;
+  }
+  .allocation-bar-segment {
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #0f172a;
+    font-size: 11px;
+    font-weight: 700;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .allocation-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px 16px;
+  }
+  .allocation-breakdown-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    padding: 4px 0;
+  }
+  .allocation-breakdown-item .dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 8px;
+  }
+  .portfolio-snapshot-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+  .portfolio-snapshot-metric {
+    background: var(--card);
+    padding: 14px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .portfolio-snapshot-metric .val {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 2px;
+  }
+  .portfolio-snapshot-metric .lbl {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
   /* ===== RESPONSIVE ===== */
   @media (max-width: 1200px) {
     .asset-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
@@ -904,6 +1061,9 @@
     .custom-ticker-bar { flex-wrap: wrap; }
     .fn-builder { grid-template-columns: 1fr; }
     .fn-result .fn-value { font-size: 42px; }
+    .holding-row, .holding-header { grid-template-columns: 1fr 1fr; }
+    .holding-header { display: none; }
+    .portfolio-snapshot-metrics { grid-template-columns: 1fr; }
   }
   @media (max-width: 480px) {
     body { padding: 12px; }
@@ -939,7 +1099,8 @@
     <button class="tab-btn" data-tab="overview">2. Overview</button>
     <button class="tab-btn" data-tab="compare">3. Compare</button>
     <button class="tab-btn" data-tab="dca">4. DCA Simulator</button>
-    <button class="tab-btn" data-tab="portfolio">5. Portfolio Builder</button>
+    <button class="tab-btn" data-tab="myportfolio">5. My Portfolio</button>
+    <button class="tab-btn" data-tab="portfolio">6. Portfolio Builder</button>
   </div>
 
   <!-- TAB: FREEDOM NUMBER BUILDER -->
@@ -1190,6 +1351,25 @@
     </div>
   </div>
 
+  <!-- TAB: MY PORTFOLIO -->
+  <div class="tab-content" id="tab-myportfolio">
+    <div class="card">
+      <h2>My Current Portfolio</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
+        Enter what you actually own today to see your real allocation. The tool uses current prices to calculate each asset's dollar value and percentage of your total portfolio.
+      </p>
+
+      <div id="holdingsList"></div>
+
+      <div style="display:flex; gap: 12px; margin-top: 12px; flex-wrap: wrap;">
+        <button id="addHoldingBtn" class="fn-btn secondary">+ Add Holding</button>
+        <button id="useAsBaselineBtn" class="fn-btn">Use This as My Portfolio Builder Baseline →</button>
+      </div>
+
+      <div id="portfolioTotalsWrap" style="margin-top: 28px;"></div>
+    </div>
+  </div>
+
   <!-- TAB: PORTFOLIO BUILDER -->
   <div class="tab-content" id="tab-portfolio">
     <div class="card">
@@ -1242,6 +1422,8 @@
     portfolioAllocations: {},
     customTickers: [],
     selectedAssets: [],
+    // My current holdings: [{ key: 'BTC', units: 0.5 }, ...]
+    myHoldings: [],
     // Freedom Number Builder state
     fn: {
       expMode: 'simple',
@@ -2603,6 +2785,224 @@
     container.innerHTML = html;
   }
 
+  // --- My Portfolio ---
+  function renderMyPortfolio() {
+    const listEl = document.getElementById('holdingsList');
+    const totalsEl = document.getElementById('portfolioTotalsWrap');
+    if (!listEl || !totalsEl) return;
+
+    // Ensure at least one empty row
+    if (!_settings.myHoldings || _settings.myHoldings.length === 0) {
+      _settings.myHoldings = [{ key: '', units: 0 }];
+    }
+
+    // Build holding rows
+    const availableKeys = Object.keys(_data.assets);
+    let rowsHtml = `<div class="holding-header">
+      <div>Asset</div>
+      <div>Units / Shares</div>
+      <div>Current Price</div>
+      <div>Dollar Value</div>
+      <div></div>
+    </div>`;
+
+    _settings.myHoldings.forEach((holding, idx) => {
+      const asset = holding.key ? _data.assets[holding.key] : null;
+      const price = asset ? asset.monthlyPrices[asset.monthlyPrices.length - 1].close : 0;
+      const value = holding.units * price;
+
+      let optionsHtml = '<option value="">— select —</option>';
+      availableKeys.forEach(k => {
+        const a = _data.assets[k];
+        const sel = k === holding.key ? 'selected' : '';
+        optionsHtml += `<option value="${k}" ${sel}>${a.name}</option>`;
+      });
+
+      rowsHtml += `
+        <div class="holding-row" data-idx="${idx}">
+          <select class="holding-asset-select" data-idx="${idx}">${optionsHtml}</select>
+          <input type="number" class="holding-units-input" data-idx="${idx}" min="0" step="any" value="${holding.units || ''}" placeholder="0">
+          <div class="holding-price">${asset ? '$' + formatNum(price) : '—'}</div>
+          <div class="holding-value">${asset && holding.units > 0 ? '$' + formatNum(value) : '—'}</div>
+          <button class="holding-remove" data-idx="${idx}">Remove</button>
+        </div>
+      `;
+    });
+    listEl.innerHTML = rowsHtml;
+
+    // Wire up handlers
+    listEl.querySelectorAll('.holding-asset-select').forEach(sel => {
+      sel.addEventListener('change', e => {
+        const idx = parseInt(e.target.dataset.idx);
+        _settings.myHoldings[idx].key = e.target.value;
+        debounceSave();
+        renderMyPortfolio();
+      });
+    });
+    listEl.querySelectorAll('.holding-units-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const idx = parseInt(e.target.dataset.idx);
+        _settings.myHoldings[idx].units = parseFloat(e.target.value) || 0;
+        debounceSave();
+        renderMyPortfolioTotals();
+      });
+    });
+    listEl.querySelectorAll('.holding-remove').forEach(btn => {
+      btn.addEventListener('click', e => {
+        const idx = parseInt(e.target.dataset.idx);
+        _settings.myHoldings.splice(idx, 1);
+        if (_settings.myHoldings.length === 0) _settings.myHoldings = [{ key: '', units: 0 }];
+        debounceSave();
+        renderMyPortfolio();
+      });
+    });
+
+    renderMyPortfolioTotals();
+  }
+
+  function renderMyPortfolioTotals() {
+    const totalsEl = document.getElementById('portfolioTotalsWrap');
+    if (!totalsEl) return;
+
+    // Filter to valid holdings
+    const valid = (_settings.myHoldings || []).filter(h => h.key && _data.assets[h.key] && h.units > 0);
+
+    if (valid.length === 0) {
+      totalsEl.innerHTML = '<p style="color:var(--muted); text-align:center; padding:20px;">Add at least one holding with units above to see your allocation.</p>';
+      return;
+    }
+
+    // Compute values per holding
+    let totalValue = 0;
+    const items = valid.map(h => {
+      const asset = _data.assets[h.key];
+      const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
+      const value = h.units * price;
+      totalValue += value;
+      return { key: h.key, asset, units: h.units, price, value };
+    });
+
+    // Aggregate by key (in case same asset appears twice)
+    const byKey = {};
+    items.forEach(it => {
+      if (!byKey[it.key]) byKey[it.key] = { key: it.key, asset: it.asset, value: 0 };
+      byKey[it.key].value += it.value;
+    });
+    const aggregated = Object.values(byKey).map(a => ({
+      ...a,
+      pct: (a.value / totalValue) * 100
+    })).sort((a, b) => b.value - a.value);
+
+    // Calculate blended return and fit score based on current holdings
+    let blendedReturn = 0;
+    let blendedVol = 0;
+    aggregated.forEach(a => {
+      const m = _assetMetrics[a.key];
+      if (!m) return;
+      const weight = a.pct / 100;
+      blendedReturn += (m.avgReturn || 0) * weight;
+      blendedVol += (m.volatility || 0) * weight;
+    });
+    const fitScore = calcCatchUpFitScore(blendedReturn, blendedVol, _settings.requiredReturn, _settings.timeline);
+    const grade = getGrade(fitScore);
+
+    // Build allocation bar segments
+    let barHtml = '';
+    aggregated.forEach(a => {
+      barHtml += `<div class="allocation-bar-segment" style="width:${a.pct}%; background:${a.asset.color};" title="${a.asset.name}: ${a.pct.toFixed(1)}%">${a.pct >= 6 ? a.asset.ticker : ''}</div>`;
+    });
+
+    // Build breakdown list
+    let breakdownHtml = '';
+    aggregated.forEach(a => {
+      breakdownHtml += `
+        <div class="allocation-breakdown-item">
+          <span><span class="dot" style="background:${a.asset.color}"></span>${a.asset.name}</span>
+          <span><strong>${a.pct.toFixed(1)}%</strong> · $${formatNum(a.value)}</span>
+        </div>
+      `;
+    });
+
+    const meetsRequired = blendedReturn >= _settings.requiredReturn;
+
+    totalsEl.innerHTML = `
+      <div class="portfolio-summary">
+        <h3>Your Current Portfolio</h3>
+        <div class="portfolio-total">
+          <span class="label">Total Value</span>
+          <span class="value">$${formatNum(totalValue)}</span>
+        </div>
+        <div class="allocation-bar">${barHtml}</div>
+        <div class="allocation-breakdown">${breakdownHtml}</div>
+        <div class="portfolio-snapshot-metrics">
+          <div class="portfolio-snapshot-metric">
+            <div class="val" style="color:${meetsRequired ? '#22c55e' : '#f59e0b'};">${blendedReturn.toFixed(1)}%</div>
+            <div class="lbl">Current Blended Return</div>
+          </div>
+          <div class="portfolio-snapshot-metric">
+            <div class="val">${blendedVol.toFixed(1)}%</div>
+            <div class="lbl">Blended Volatility</div>
+          </div>
+          <div class="portfolio-snapshot-metric">
+            <div class="val" style="color:${grade.color};">${grade.letter}</div>
+            <div class="lbl">Catch-Up Fit</div>
+          </div>
+        </div>
+        <p style="margin-top:14px; font-size:13px; color:var(--muted); line-height:1.5;">
+          ${meetsRequired
+            ? `Your current portfolio's historical blended return of <strong style="color:var(--green);">${blendedReturn.toFixed(1)}%</strong> meets your required <strong style="color:var(--accent);">${_settings.requiredReturn}%</strong>. You&apos;re on track historically.`
+            : `Your current portfolio's historical blended return of <strong style="color:var(--accent);">${blendedReturn.toFixed(1)}%</strong> is below your required <strong style="color:var(--accent);">${_settings.requiredReturn}%</strong>. Consider adjusting your allocation or adding higher-growth assets.`}
+        </p>
+      </div>
+    `;
+  }
+
+  function useMyPortfolioAsBaseline() {
+    const valid = (_settings.myHoldings || []).filter(h => h.key && _data.assets[h.key] && h.units > 0);
+    if (valid.length === 0) {
+      alert('Add at least one holding first.');
+      return;
+    }
+
+    // Aggregate to percentages
+    let totalValue = 0;
+    const byKey = {};
+    valid.forEach(h => {
+      const asset = _data.assets[h.key];
+      const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
+      const value = h.units * price;
+      totalValue += value;
+      byKey[h.key] = (byKey[h.key] || 0) + value;
+    });
+
+    // Push into Portfolio Builder state
+    const newAllocations = {};
+    const newSelected = [];
+    let allocatedSoFar = 0;
+    const keys = Object.keys(byKey);
+    keys.forEach((k, i) => {
+      const pct = (byKey[k] / totalValue) * 100;
+      // Round for clean slider values. Last item gets remainder so total = 100
+      if (i === keys.length - 1) {
+        newAllocations[k] = 100 - allocatedSoFar;
+      } else {
+        newAllocations[k] = Math.round(pct);
+        allocatedSoFar += Math.round(pct);
+      }
+      newSelected.push(k);
+    });
+
+    _settings.portfolioAllocations = newAllocations;
+    _settings.selectedAssets = newSelected;
+    debounceSave();
+    computeAllMetrics();
+    renderAll();
+
+    // Switch to Portfolio Builder tab
+    const btn = document.querySelector('.tab-btn[data-tab="portfolio"]');
+    if (btn) btn.click();
+  }
+
   // --- Portfolio Builder ---
   function renderPortfolio() {
     const slidersEl = document.getElementById('portfolioSliders');
@@ -2808,6 +3208,8 @@
         } else if (tab === 'dca') {
           renderDCA();
           setTimeout(renderDCAGrowthChart, 150);
+        } else if (tab === 'myportfolio') {
+          renderMyPortfolio();
         } else if (tab === 'portfolio') {
           renderPortfolio();
         }
@@ -2919,6 +3321,15 @@
       if (e.key === 'Enter') addCustomTicker();
     });
 
+    // My Portfolio: Add Holding + Use as Baseline
+    document.getElementById('addHoldingBtn').addEventListener('click', () => {
+      if (!_settings.myHoldings) _settings.myHoldings = [];
+      _settings.myHoldings.push({ key: '', units: 0 });
+      renderMyPortfolio();
+      debounceSave();
+    });
+    document.getElementById('useAsBaselineBtn').addEventListener('click', useMyPortfolioAsBaseline);
+
     // Window resize: redraw charts on whichever tab is active
     let resizeTimer;
     window.addEventListener('resize', () => {
@@ -2941,6 +3352,8 @@
           setTimeout(renderCompareCharts, 200);
         } else if (_settings.activeTab === 'dca') {
           setTimeout(renderDCAGrowthChart, 200);
+        } else if (_settings.activeTab === 'myportfolio') {
+          setTimeout(renderMyPortfolio, 50);
         }
       }
     }
