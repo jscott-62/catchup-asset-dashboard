@@ -172,6 +172,20 @@ DEFAULT_ASSETS = {
         "category": "Individual Stock",
         "color": "#06b6d4",
         "source": "yahoo"
+    },
+    "MSTR": {
+        "ticker": "MSTR",
+        "name": "Strategy (MSTR)",
+        "category": "Bitcoin Treasury",
+        "color": "#f97316",
+        "source": "yahoo"
+    },
+    "IBIT": {
+        "ticker": "IBIT",
+        "name": "iShares Bitcoin Trust (IBIT)",
+        "category": "Bitcoin ETF",
+        "color": "#fb923c",
+        "source": "yahoo"
     }
 }
 
