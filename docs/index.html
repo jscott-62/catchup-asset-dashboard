@@ -2789,17 +2789,20 @@
 
   // --- My Portfolio ---
   function buildPieChartSVG(aggregated, totalValue) {
-    const size = 220;
+    const size = 400;
     const cx = size / 2;
     const cy = size / 2;
-    const outerR = 88;
-    const innerR = 44;
+    const outerR = 170;
+    const innerR = 82;
+    const labelR = innerR + (outerR - innerR) * 0.52;
     let paths = '';
+    let labels = '';
     let startAngle = -Math.PI / 2;
     aggregated.forEach(a => {
       if (a.pct <= 0) return;
       const fraction = a.pct / 100;
       const endAngle = startAngle + fraction * 2 * Math.PI;
+      const midAngle = (startAngle + endAngle) / 2;
       const x1 = cx + outerR * Math.cos(startAngle);
       const y1 = cy + outerR * Math.sin(startAngle);
       const x2 = cx + outerR * Math.cos(endAngle);
@@ -2809,13 +2812,27 @@
       const x4 = cx + innerR * Math.cos(startAngle);
       const y4 = cy + innerR * Math.sin(startAngle);
       const largeArc = fraction > 0.5 ? 1 : 0;
-      paths += `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z" fill="${a.asset.color}" stroke="#1e293b" stroke-width="1.5"><title>${a.asset.name}: ${a.pct.toFixed(1)}%</title></path>`;
+      paths += `<path d="M ${x1.toFixed(2)} ${y1.toFixed(2)} A ${outerR} ${outerR} 0 ${largeArc} 1 ${x2.toFixed(2)} ${y2.toFixed(2)} L ${x3.toFixed(2)} ${y3.toFixed(2)} A ${innerR} ${innerR} 0 ${largeArc} 0 ${x4.toFixed(2)} ${y4.toFixed(2)} Z" fill="${a.asset.color}" stroke="#1e293b" stroke-width="2"><title>${a.asset.name}: ${a.pct.toFixed(1)}%</title></path>`;
+      const lx = (cx + labelR * Math.cos(midAngle)).toFixed(2);
+      const ly = (cy + labelR * Math.sin(midAngle)).toFixed(2);
+      if (a.pct >= 5) {
+        labels += `<text x="${lx}" y="${(parseFloat(ly) - 8).toFixed(2)}" text-anchor="middle" fill="white" font-size="13" font-weight="700" font-family="-apple-system,sans-serif" filter="url(#lbl-shadow)">${a.asset.ticker}</text>`;
+        labels += `<text x="${lx}" y="${(parseFloat(ly) + 8).toFixed(2)}" text-anchor="middle" fill="rgba(255,255,255,0.88)" font-size="11" font-family="-apple-system,sans-serif" filter="url(#lbl-shadow)">${a.pct.toFixed(1)}%</text>`;
+      } else if (a.pct >= 2.5) {
+        labels += `<text x="${lx}" y="${(parseFloat(ly) + 4).toFixed(2)}" text-anchor="middle" dominant-baseline="middle" fill="white" font-size="10" font-family="-apple-system,sans-serif" filter="url(#lbl-shadow)">${a.pct.toFixed(1)}%</text>`;
+      }
       startAngle = endAngle;
     });
-    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" style="display:block;">
+    return `<svg width="100%" viewBox="0 0 ${size} ${size}" style="display:block;max-width:${size}px;margin:0 auto;">
+      <defs>
+        <filter id="lbl-shadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="rgba(0,0,0,0.75)" flood-opacity="1"/>
+        </filter>
+      </defs>
       ${paths}
-      <text x="${cx}" y="${cy - 7}" text-anchor="middle" fill="#e2e8f0" font-size="13" font-weight="700" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">$${formatNum(totalValue)}</text>
-      <text x="${cx}" y="${cy + 11}" text-anchor="middle" fill="#94a3b8" font-size="10" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif">Total Value</text>
+      ${labels}
+      <text x="${cx}" y="${cy - 14}" text-anchor="middle" fill="#94a3b8" font-size="12" font-family="-apple-system,sans-serif">Total Portfolio</text>
+      <text x="${cx}" y="${cy + 12}" text-anchor="middle" fill="#e2e8f0" font-size="20" font-weight="800" font-family="-apple-system,sans-serif">$${formatNum(totalValue)}</text>
     </svg>`;
   }
 
@@ -2961,14 +2978,7 @@
     totalsEl.innerHTML = `
       <div class="portfolio-summary">
         <h3>Your Current Portfolio</h3>
-        <div class="portfolio-total">
-          <span class="label">Total Value</span>
-          <span class="value">$${formatNum(totalValue)}</span>
-        </div>
-        <div style="display:flex;gap:32px;align-items:center;margin:16px 0;flex-wrap:wrap;">
-          <div style="flex:0 0 auto;">${buildPieChartSVG(aggregated, totalValue)}</div>
-          <div style="flex:1;min-width:200px;"><div class="allocation-breakdown">${breakdownHtml}</div></div>
-        </div>
+        ${buildPieChartSVG(aggregated, totalValue)}
         <div class="portfolio-snapshot-metrics">
           <div class="portfolio-snapshot-metric">
             <div class="val" style="color:${meetsRequired ? '#22c55e' : '#f59e0b'};">${blendedReturn.toFixed(1)}%</div>
