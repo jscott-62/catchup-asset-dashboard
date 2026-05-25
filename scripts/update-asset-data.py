@@ -89,7 +89,9 @@ DEFAULT_ASSETS = {
         "source": "yahoo"
     },
     "SUI": {
-        "ticker": "SUI-USD",
+        # Yahoo's plain "SUI-USD" points to a different/dead token. The
+        # numeric-ID ticker is the real Sui (Mysten Labs, launched May 2023).
+        "ticker": "SUI20947-USD",
         "name": "Sui",
         "category": "Cryptocurrency",
         "color": "#4da2ff",
@@ -103,7 +105,9 @@ DEFAULT_ASSETS = {
         "source": "yahoo"
     },
     "UNI": {
-        "ticker": "UNI-USD",
+        # Yahoo's plain "UNI-USD" points to a different token. Numeric ID
+        # disambiguates to the real Uniswap (launched September 2020).
+        "ticker": "UNI7083-USD",
         "name": "Uniswap",
         "category": "Cryptocurrency",
         "color": "#ff007a",
@@ -210,15 +214,31 @@ def fetch_yahoo(ticker):
         closes = result["indicators"]["quote"][0]["close"]
 
         prices = []
+        skipped = 0
         for ts, close in zip(timestamps, closes):
-            if close is not None:
-                dt = datetime.fromtimestamp(ts)
-                prices.append({
-                    "date": dt.strftime("%Y-%m-%d"),
-                    "close": round(float(close), 2)
-                })
+            # Yahoo sometimes returns 0, None, or sub-cent values for months
+            # before an asset actually existed. After rounding, sub-cent
+            # values become 0.00 and would break DCA math (divide by zero →
+            # NaN cascade). Use higher precision so micro-cap crypto stays
+            # representable, and skip anything that still rounds to zero.
+            if close is None or close <= 0:
+                skipped += 1
+                continue
+            # Keep up to 6 decimals for sub-dollar assets, 2 decimals for
+            # anything priced like a normal asset.
+            close_f = float(close)
+            decimals = 6 if close_f < 1 else 2
+            rounded = round(close_f, decimals)
+            if rounded <= 0:
+                skipped += 1
+                continue
+            dt = datetime.fromtimestamp(ts)
+            prices.append({
+                "date": dt.strftime("%Y-%m-%d"),
+                "close": rounded
+            })
 
-        print(f"  Got {len(prices)} monthly data points")
+        print(f"  Got {len(prices)} monthly data points" + (f" (skipped {skipped} invalid)" if skipped else ""))
         return prices
 
     except Exception as e:
