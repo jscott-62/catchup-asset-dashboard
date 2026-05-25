@@ -166,31 +166,113 @@
     margin-bottom: 8px;
   }
 
-  /* ===== ASSET CARDS GRID ===== */
-  .asset-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
+  /* ===== ASSET LIST (expandable rows) ===== */
+  .asset-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
-  .asset-card {
+  .asset-row {
     background: var(--card);
     border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
     transition: border-color 0.2s, opacity 0.2s;
-    position: relative;
+    overflow: hidden;
   }
-  .asset-card:hover { border-color: var(--accent); }
-  .asset-card.selected { border-color: var(--accent); }
-  .asset-card.dimmed { opacity: 0.5; }
+  .asset-row:hover { border-color: var(--accent); }
+  .asset-row.selected { border-color: var(--accent); }
+  .asset-row.dimmed { opacity: 0.5; }
 
-  /* Asset checkbox (top-left so it doesn't cover the category badge) */
+  .asset-row-summary {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1.8fr) 130px 120px 100px 56px 24px;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .asset-row-summary > * { min-width: 0; }
+  .asset-row-name {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+  }
+  .asset-row-name .name {
+    font-size: 15px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .asset-row-name .ticker {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .asset-row-category {
+    font-size: 10px;
+    padding: 3px 9px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    justify-self: start;
+    white-space: nowrap;
+  }
+  .asset-row-price {
+    font-size: 15px;
+    font-weight: 700;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .asset-row-return {
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+  .asset-row-grade {
+    font-size: 14px;
+    font-weight: 800;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    justify-self: center;
+  }
+  .asset-row-chevron {
+    color: var(--muted);
+    font-size: 14px;
+    transition: transform 0.2s;
+    justify-self: center;
+  }
+  .asset-row.expanded .asset-row-chevron { transform: rotate(90deg); }
+
+  .asset-row-details {
+    display: none;
+    padding: 0 20px 20px 20px;
+    border-top: 1px solid var(--border);
+  }
+  .asset-row.expanded .asset-row-details { display: block; }
+  .asset-row-details .asset-price-large {
+    font-size: 24px;
+    font-weight: 700;
+    margin-top: 16px;
+    margin-bottom: 2px;
+  }
+  .asset-row-details .asset-price-date {
+    font-size: 11px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+
+  /* Asset checkbox — inline with row */
   .asset-checkbox {
-    position: absolute;
-    top: 16px;
-    left: 16px;
-    width: 24px;
-    height: 24px;
+    width: 22px;
+    height: 22px;
     -webkit-appearance: none;
     appearance: none;
     background: var(--bg);
@@ -198,7 +280,7 @@
     border-radius: 6px;
     cursor: pointer;
     transition: all 0.2s;
-    z-index: 2;
+    flex-shrink: 0;
   }
   .asset-checkbox:checked {
     background: var(--accent);
@@ -208,10 +290,10 @@
     content: '✓';
     display: block;
     text-align: center;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 700;
     color: var(--bg);
-    line-height: 20px;
+    line-height: 18px;
   }
   .asset-checkbox:hover { border-color: var(--accent); }
 
@@ -249,39 +331,7 @@
     transition: all 0.2s;
   }
   .sel-btn:hover { color: var(--text); border-color: var(--text); }
-  .asset-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 16px;
-    padding-left: 36px; /* clear the checkbox in the top-left */
-  }
-  .asset-name {
-    font-size: 18px;
-    font-weight: 700;
-  }
-  .asset-ticker {
-    font-size: 13px;
-    color: var(--muted);
-  }
-  .asset-category {
-    font-size: 11px;
-    padding: 3px 10px;
-    border-radius: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  .asset-price {
-    font-size: 28px;
-    font-weight: 700;
-    margin-bottom: 4px;
-  }
-  .asset-price-date {
-    font-size: 11px;
-    color: var(--muted);
-    margin-bottom: 16px;
-  }
+  /* (legacy card classes removed — overview now uses .asset-row list) */
 
   /* ===== METRICS TABLE ===== */
   .metrics-table {
@@ -1043,11 +1093,16 @@
 
   /* ===== RESPONSIVE ===== */
   @media (max-width: 1200px) {
-    .asset-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
     .portfolio-grid { grid-template-columns: 1fr; }
-  }
-  @media (max-width: 1200px) {
     .fn-builder { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 900px) {
+    .asset-row-summary {
+      grid-template-columns: 28px minmax(0, 1.5fr) 90px 80px 32px 16px;
+      gap: 10px;
+    }
+    .asset-row-summary .asset-row-return-col { display: none; }
+    .asset-row-category { font-size: 9px; padding: 2px 7px; }
   }
   @media (max-width: 768px) {
     body { padding: 16px; }
@@ -1056,8 +1111,15 @@
     .input-panel { flex-direction: column; gap: 16px; }
     .input-group { min-width: 100%; }
     .your-numbers { min-width: 100%; }
-    .asset-grid { grid-template-columns: 1fr; }
     .portfolio-grid { grid-template-columns: 1fr; }
+    .asset-row-summary {
+      grid-template-columns: 26px minmax(0, 1fr) 80px 32px 14px;
+      gap: 8px;
+      padding: 10px 12px;
+    }
+    .asset-row-summary .asset-row-category,
+    .asset-row-summary .asset-row-return-col { display: none; }
+    .asset-row-details { padding: 0 14px 16px 14px; }
     .custom-ticker-bar { flex-wrap: wrap; }
     .fn-builder { grid-template-columns: 1fr; }
     .fn-result .fn-value { font-size: 42px; }
@@ -1293,7 +1355,7 @@
       <span class="hint">Add any stock, ETF, or crypto already in the database</span>
       <span class="custom-ticker-msg" id="tickerMsg"></span>
     </div>
-    <div class="asset-grid" id="assetGrid"></div>
+    <div class="asset-list" id="assetGrid"></div>
   </div>
 
   <!-- TAB: COMPARE -->
@@ -1453,6 +1515,7 @@
   let _activeAssets = [];
   let _debounceTimer = null;
   let _categoryFilter = 'all';
+  let _expandedAssets = new Set();
 
   // --- Data Loading ---
   function loadData() {
@@ -1969,9 +2032,11 @@
       if (_categoryFilter === 'Cryptocurrency' && asset.category !== 'Cryptocurrency') return;
       if (_categoryFilter === 'traditional' && asset.category === 'Cryptocurrency') return;
 
-      const card = document.createElement('div');
+      const row = document.createElement('div');
       const isSelected = _settings.selectedAssets.includes(key);
-      card.className = 'asset-card' + (isSelected ? ' selected' : '');
+      const isExpanded = _expandedAssets.has(key);
+      row.className = 'asset-row' + (isSelected ? ' selected' : '') + (isExpanded ? ' expanded' : '');
+      row.dataset.asset = key;
 
       const catColors = {
         'Cryptocurrency': 'var(--accent)',
@@ -1985,52 +2050,63 @@
         'Custom': 'var(--cyan)'
       };
       const catColor = catColors[asset.category] || 'var(--muted)';
+      const fiveYr = m.returns['5'];
+      const fiveYrHtml = fiveYr !== null && fiveYr !== undefined
+        ? '<span class="' + (fiveYr >= 0 ? 'positive' : 'negative') + '">' + (fiveYr >= 0 ? '+' : '') + fiveYr.toFixed(1) + '%</span>'
+        : '<span style="color:var(--muted)">N/A</span>';
 
-      card.innerHTML = `
-        <input type="checkbox" class="asset-checkbox" data-asset="${key}" ${isSelected ? 'checked' : ''} title="Select for comparison">
-        <div class="asset-header">
-          <div>
-            <div class="asset-name" style="color:${asset.color}">${asset.name}</div>
-            <div class="asset-ticker">${asset.ticker}</div>
+      row.innerHTML = `
+        <div class="asset-row-summary">
+          <input type="checkbox" class="asset-checkbox" data-asset="${key}" ${isSelected ? 'checked' : ''} title="Select for comparison">
+          <div class="asset-row-name">
+            <div class="name" style="color:${asset.color}">${asset.name}</div>
+            <div class="ticker">${asset.ticker}</div>
           </div>
-          <span class="asset-category" style="background:${catColor}20;color:${catColor}">${asset.category}</span>
+          <span class="asset-row-category" style="background:${catColor}20;color:${catColor}">${asset.category}</span>
+          <div class="asset-row-price">$${formatNum(m.currentPrice)}</div>
+          <div class="asset-row-return asset-row-return-col" title="5-Year annualized return">${fiveYrHtml}</div>
+          <div class="asset-row-grade ${m.grade.class}" title="Catch-Up Fit Score">${m.grade.letter}</div>
+          <span class="asset-row-chevron">▶</span>
         </div>
-        <div class="asset-price">$${formatNum(m.currentPrice)}</div>
-        <div class="asset-price-date">as of ${m.priceDate}</div>
-        <table class="metrics-table">
-          <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
-          <tr><td>1-Year Return</td><td>${fmtReturn(m.returns['1'])}</td></tr>
-          <tr><td>3-Year Return (ann.)</td><td>${fmtReturn(m.returns['3'])}</td></tr>
-          <tr><td>5-Year Return (ann.)</td><td>${fmtReturn(m.returns['5'])}</td></tr>
-          <tr><td>10-Year Return (ann.)</td><td>${fmtReturn(m.returns['10'])}</td></tr>
-          <tr><td>Volatility (Std Dev)</td><td>${m.volatility !== null ? m.volatility.toFixed(1) + '%' : 'N/A'}</td></tr>
-          <tr><td>Max Drawdown</td><td class="negative">${m.maxDrawdown.drawdown.toFixed(1)}%</td></tr>
-          <tr><td>Recovery Time</td><td>${m.maxDrawdown.recoveryMonths !== null ? m.maxDrawdown.recoveryMonths + ' months' : 'Not recovered'}</td></tr>
-          <tr><td>Best 12-Month</td><td>${m.bestWorst.best ? '<span class="positive">+' + m.bestWorst.best.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
-          <tr><td>Worst 12-Month</td><td>${m.bestWorst.worst ? '<span class="negative">' + m.bestWorst.worst.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
-        </table>
-        <div class="fit-score-container">
-          <div class="fit-score-header">
-            <span class="fit-score-label">Catch-Up Fit Score</span>
-            <div class="fit-score-grade ${m.grade.class}">${m.grade.letter}</div>
-          </div>
-          <div class="fit-score-bar">
-            <div class="fit-score-fill" style="width:${m.fitScore}%;background:${m.grade.color}"></div>
-          </div>
-          <div class="fit-score-summary">
-            ${asset.name} has averaged <strong>${m.avgReturn.toFixed(1)}%</strong> annually
-            ${m.volatility !== null ? ' with <strong>' + m.volatility.toFixed(0) + '%</strong> volatility' : ''}.
-            Your required return is <strong>${_settings.requiredReturn}%</strong>.
-            <strong>${m.grade.label}.</strong>
-            ${m.fitScore < 40 && _settings.timeline < 8 ? '<br><em style="color:var(--red)">Warning: High volatility with your ' + _settings.timeline + '-year timeline means significant risk.</em>' : ''}
+        <div class="asset-row-details">
+          <div class="asset-price-large">$${formatNum(m.currentPrice)}</div>
+          <div class="asset-price-date">as of ${m.priceDate}</div>
+          <table class="metrics-table">
+            <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
+            <tr><td>1-Year Return</td><td>${fmtReturn(m.returns['1'])}</td></tr>
+            <tr><td>3-Year Return (ann.)</td><td>${fmtReturn(m.returns['3'])}</td></tr>
+            <tr><td>5-Year Return (ann.)</td><td>${fmtReturn(m.returns['5'])}</td></tr>
+            <tr><td>10-Year Return (ann.)</td><td>${fmtReturn(m.returns['10'])}</td></tr>
+            <tr><td>Volatility (Std Dev)</td><td>${m.volatility !== null ? m.volatility.toFixed(1) + '%' : 'N/A'}</td></tr>
+            <tr><td>Max Drawdown</td><td class="negative">${m.maxDrawdown.drawdown.toFixed(1)}%</td></tr>
+            <tr><td>Recovery Time</td><td>${m.maxDrawdown.recoveryMonths !== null ? m.maxDrawdown.recoveryMonths + ' months' : 'Not recovered'}</td></tr>
+            <tr><td>Best 12-Month</td><td>${m.bestWorst.best ? '<span class="positive">+' + m.bestWorst.best.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
+            <tr><td>Worst 12-Month</td><td>${m.bestWorst.worst ? '<span class="negative">' + m.bestWorst.worst.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
+          </table>
+          <div class="fit-score-container">
+            <div class="fit-score-header">
+              <span class="fit-score-label">Catch-Up Fit Score</span>
+              <div class="fit-score-grade ${m.grade.class}">${m.grade.letter}</div>
+            </div>
+            <div class="fit-score-bar">
+              <div class="fit-score-fill" style="width:${m.fitScore}%;background:${m.grade.color}"></div>
+            </div>
+            <div class="fit-score-summary">
+              ${asset.name} has averaged <strong>${m.avgReturn.toFixed(1)}%</strong> annually
+              ${m.volatility !== null ? ' with <strong>' + m.volatility.toFixed(0) + '%</strong> volatility' : ''}.
+              Your required return is <strong>${_settings.requiredReturn}%</strong>.
+              <strong>${m.grade.label}.</strong>
+              ${m.fitScore < 40 && _settings.timeline < 8 ? '<br><em style="color:var(--red)">Warning: High volatility with your ' + _settings.timeline + '-year timeline means significant risk.</em>' : ''}
+            </div>
           </div>
         </div>
       `;
-      grid.appendChild(card);
+      grid.appendChild(row);
     });
 
-    // Bind checkbox events
+    // Bind checkbox events (stop propagation so the row doesn't toggle)
     grid.querySelectorAll('.asset-checkbox').forEach(cb => {
+      cb.addEventListener('click', (e) => e.stopPropagation());
       cb.addEventListener('change', (e) => {
         const assetKey = e.target.dataset.asset;
         if (e.target.checked) {
@@ -2040,10 +2116,22 @@
         } else {
           _settings.selectedAssets = _settings.selectedAssets.filter(k => k !== assetKey);
         }
-        // Update card visual
-        e.target.closest('.asset-card').classList.toggle('selected', e.target.checked);
+        e.target.closest('.asset-row').classList.toggle('selected', e.target.checked);
         updateSelectionCount();
         debounceSave();
+      });
+    });
+
+    // Bind row-summary click to toggle expand
+    grid.querySelectorAll('.asset-row-summary').forEach(summary => {
+      summary.addEventListener('click', (e) => {
+        if (e.target.closest('.asset-checkbox')) return;
+        const row = summary.closest('.asset-row');
+        const key = row.dataset.asset;
+        const nowExpanded = !row.classList.contains('expanded');
+        row.classList.toggle('expanded', nowExpanded);
+        if (nowExpanded) _expandedAssets.add(key);
+        else _expandedAssets.delete(key);
       });
     });
 
