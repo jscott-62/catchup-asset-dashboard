@@ -476,6 +476,22 @@
   .negative { color: var(--red); }
 
   /* ===== FIT SCORE ===== */
+  .fit-score-compare {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 700px) {
+    .fit-score-compare { grid-template-columns: 1fr; gap: 14px; }
+  }
+  .fit-score-compare .fit-score-container {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
   .fit-score-container {
     margin-top: 16px;
     padding-top: 16px;
@@ -2118,6 +2134,22 @@
     return { date: label, years: actualYears, truncated };
   }
 
+  // Downside deviation: std-dev of NEGATIVE annual returns only.
+  // Captures "risk that hurts" without penalizing upside volatility.
+  // This is what the Sortino ratio uses instead of full standard deviation.
+  function calcDownsideDeviation(prices) {
+    if (!prices || prices.length < 24) return null;
+    const annualReturns = [];
+    for (let i = 12; i < prices.length; i += 12) {
+      const ret = (prices[i].close / prices[i - 12].close - 1) * 100;
+      annualReturns.push(ret);
+    }
+    if (annualReturns.length < 2) return null;
+    // Measure deviation from 0% (negative returns only)
+    const downsideSqSum = annualReturns.reduce((acc, r) => acc + (r < 0 ? r * r : 0), 0);
+    return Math.sqrt(downsideSqSum / annualReturns.length);
+  }
+
   function calcVolatility(prices) {
     if (!prices || prices.length < 24) return null;
     // Calculate annual returns for each 12-month period
@@ -2265,6 +2297,41 @@
     return Math.max(0, Math.min(100, score));
   }
 
+  // Risk-Aware Catch-Up Fit Score (v2).
+  // Differences from v1:
+  //  - Replaces total volatility with DOWNSIDE deviation (rewards positive
+  //    skew like Bitcoin's instead of punishing upside swings)
+  //  - Replaces consistency-ratio with MAX DRAWDOWN scaled by timeline
+  //    severity (captures the real catch-up fear: "what if I'd need to
+  //    withdraw right after a crash")
+  function calcCatchUpFitScoreV2(avgReturn, downsideVol, maxDrawdownPct, requiredReturn, timeline) {
+    // Return Score (60%) — same as v1
+    let returnScore;
+    if (avgReturn >= requiredReturn) {
+      returnScore = 100 + Math.min(20, (avgReturn - requiredReturn) / requiredReturn * 40);
+    } else {
+      returnScore = Math.max(0, (avgReturn / Math.max(requiredReturn, 1)) * 100);
+    }
+    returnScore = Math.min(120, returnScore);
+
+    // Downside-Risk Score (25%) — punishes only the volatility that hurt
+    const timelineFactor = Math.min(1, timeline / 15);
+    const dv = downsideVol || 0;
+    const downsidePenalty = dv * (1 - timelineFactor * 0.6);
+    // 2.5x multiplier compensates for downside-vol being much smaller than total vol
+    const downsideScore = Math.max(0, 100 - downsidePenalty * 2.5);
+
+    // Drawdown Score (15%) — captures sequence-of-returns risk. Short
+    // timelines amplify the pain of a deep historical drawdown.
+    const dd = Math.abs(maxDrawdownPct || 0);
+    const timelineSeverity = timeline >= 15 ? 1.0 : timeline >= 10 ? 1.25 : timeline >= 5 ? 1.6 : 2.0;
+    const drawdownPenalty = dd * timelineSeverity * 0.7;
+    const drawdownScore = Math.max(0, 100 - drawdownPenalty);
+
+    const score = returnScore * 0.6 + downsideScore * 0.25 + drawdownScore * 0.15;
+    return Math.max(0, Math.min(100, score));
+  }
+
   function getGrade(score) {
     if (score >= 80) return { letter: 'A', class: 'grade-a', label: 'Strong Catch-Up Fit', color: 'var(--green)' };
     if (score >= 60) return { letter: 'B', class: 'grade-b', label: 'Moderate Catch-Up Fit', color: 'var(--blue)' };
@@ -2284,10 +2351,12 @@
       const ret3 = calcAnnualizedReturn(prices, 3);
       const ret1 = calcAnnualizedReturn(prices, 1);
       const vol = calcVolatility(prices);
+      const downsideVol = calcDownsideDeviation(prices);
       const dd = calcMaxDrawdown(prices);
       const bw = calcBestWorstYear(prices);
       const avgReturn = ret10 || ret5 || ret3 || 0;
       const fitScore = calcCatchUpFitScore(avgReturn, vol || 0, _settings.requiredReturn, _settings.timeline);
+      const fitScoreV2 = calcCatchUpFitScoreV2(avgReturn, downsideVol || 0, dd.drawdown * 100, _settings.requiredReturn, _settings.timeline);
 
       _assetMetrics[key] = {
         currentPrice: prices[prices.length - 1].close,
@@ -2300,11 +2369,14 @@
           '10': getReturnWindow(prices, 10)
         },
         volatility: vol,
+        downsideVolatility: downsideVol,
         maxDrawdown: dd,
         bestWorst: bw,
         avgReturn,
         fitScore,
-        grade: getGrade(fitScore)
+        grade: getGrade(fitScore),
+        fitScoreV2,
+        gradeV2: getGrade(fitScoreV2)
       };
     });
   }
@@ -2457,21 +2529,36 @@
             <tr><td>Best 12-Month</td><td>${m.bestWorst.best ? '<span class="positive">+' + m.bestWorst.best.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
             <tr><td>Worst 12-Month</td><td>${m.bestWorst.worst ? '<span class="negative">' + m.bestWorst.worst.ret.toFixed(1) + '%</span>' : 'N/A'}</td></tr>
           </table>
-          <div class="fit-score-container">
-            <div class="fit-score-header">
-              <span class="fit-score-label">Catch-Up Fit Score</span>
-              <div class="fit-score-grade ${m.grade.class}">${m.grade.letter}</div>
+          <div class="fit-score-compare">
+            <div class="fit-score-container">
+              <div class="fit-score-header">
+                <span class="fit-score-label">Standard Fit Score (v1)</span>
+                <div class="fit-score-grade ${m.grade.class}">${m.grade.letter}</div>
+              </div>
+              <div class="fit-score-bar">
+                <div class="fit-score-fill" style="width:${m.fitScore}%;background:${m.grade.color}"></div>
+              </div>
+              <div class="fit-score-summary" style="font-size:12px;">
+                Uses <strong>total volatility</strong>. Penalizes upside swings the same as downside.
+              </div>
             </div>
-            <div class="fit-score-bar">
-              <div class="fit-score-fill" style="width:${m.fitScore}%;background:${m.grade.color}"></div>
+            <div class="fit-score-container">
+              <div class="fit-score-header">
+                <span class="fit-score-label">Risk-Aware Fit Score (v2)</span>
+                <div class="fit-score-grade ${m.gradeV2.class}">${m.gradeV2.letter}</div>
+              </div>
+              <div class="fit-score-bar">
+                <div class="fit-score-fill" style="width:${m.fitScoreV2}%;background:${m.gradeV2.color}"></div>
+              </div>
+              <div class="fit-score-summary" style="font-size:12px;">
+                Uses <strong>downside-only volatility</strong> (${m.downsideVolatility !== null ? m.downsideVolatility.toFixed(0) + '%' : 'n/a'})
+                and <strong>max drawdown</strong> (${m.maxDrawdown.drawdown.toFixed(0)}%) scaled by your ${_settings.timeline}-year timeline.
+              </div>
             </div>
-            <div class="fit-score-summary">
-              ${asset.name} has averaged <strong>${m.avgReturn.toFixed(1)}%</strong> annually
-              ${m.volatility !== null ? ' with <strong>' + m.volatility.toFixed(0) + '%</strong> volatility' : ''}.
-              Your required return is <strong>${_settings.requiredReturn}%</strong>.
-              <strong>${m.grade.label}.</strong>
-              ${m.fitScore < 40 && _settings.timeline < 8 ? '<br><em style="color:var(--red)">Warning: High volatility with your ' + _settings.timeline + '-year timeline means significant risk.</em>' : ''}
-            </div>
+          </div>
+          <div class="fit-score-summary" style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+            ${asset.name} has averaged <strong>${m.avgReturn.toFixed(1)}%</strong> annually (your required return: <strong>${_settings.requiredReturn}%</strong>).
+            ${m.gradeV2.letter !== m.grade.letter ? '<br><em>Note: The two scores disagree (' + m.grade.letter + ' vs ' + m.gradeV2.letter + '). v2 rewards positive-skew assets that v1 over-penalizes for upside swings.</em>' : ''}
           </div>
         </div>
       `;
