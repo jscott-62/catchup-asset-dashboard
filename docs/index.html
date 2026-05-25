@@ -1293,6 +1293,7 @@
     <button class="tab-btn" data-tab="dca">4. DCA Simulator</button>
     <button class="tab-btn" data-tab="myportfolio">5. My Portfolio</button>
     <button class="tab-btn" data-tab="portfolio">6. Portfolio Builder</button>
+    <button class="tab-btn" data-tab="holding">7. Holding Periods</button>
   </div>
 
   <!-- TAB: FREEDOM NUMBER BUILDER -->
@@ -1591,6 +1592,65 @@
         </div>
         <div class="blended-metrics" id="blendedMetrics"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- TAB: HOLDING PERIODS (rolling-window backtest) -->
+  <div class="tab-content" id="tab-holding">
+    <div class="empty-state" id="holdingEmptyState" style="display:none;">
+      <div class="empty-state-icon">⏳</div>
+      <div class="empty-state-title">Pick assets to backtest</div>
+      <div class="empty-state-desc">This view answers the question: "If I had bought this asset on any random month in history and held it for N years, how often would I have made money?" Pick assets on the Overview tab and they'll show up here.</div>
+      <button class="empty-state-btn" data-goto-overview>→ Go to Overview</button>
+    </div>
+    <div class="card chart-container" id="holdingMainCard">
+      <h2>Holding Period Backtest</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.55;">
+        For every possible starting month in the data, we measure what happened if you'd bought the asset and held it for N years. The pass rate shows what percentage of those rolling windows ended in profit. The worst case shows the most painful window you could have bought into. <strong>This tests whether the "just hold for X years" rule actually holds up.</strong>
+      </p>
+      <div style="overflow-x:auto;">
+        <table class="dca-table" id="holdingPassRateTable">
+          <thead><tr>
+            <th>Asset</th>
+            <th style="text-align:center">1 Year</th>
+            <th style="text-align:center">2 Years</th>
+            <th style="text-align:center">3 Years</th>
+            <th style="text-align:center">4 Years</th>
+            <th style="text-align:center">5 Years</th>
+            <th style="text-align:center">7 Years</th>
+            <th style="text-align:center">10 Years</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5;">
+        Each cell shows: <strong>% of rolling windows that ended profitable</strong> (sample size in parens). A "—" means the asset doesn't have enough history for that holding period.
+      </p>
+    </div>
+
+    <div class="card chart-container" id="holdingWorstCard">
+      <h2 style="font-size:18px;">Worst Rolling Window By Holding Period</h2>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;line-height:1.55;">
+        The single worst entry point in the data, for each holding length. If you'd bought at exactly the wrong moment and held for N years, this is what you'd have lived through.
+      </p>
+      <div style="overflow-x:auto;">
+        <table class="dca-table" id="holdingWorstTable">
+          <thead><tr>
+            <th>Asset</th>
+            <th style="text-align:right">Worst 1Y</th>
+            <th style="text-align:right">Worst 2Y</th>
+            <th style="text-align:right">Worst 3Y</th>
+            <th style="text-align:right">Worst 4Y</th>
+            <th style="text-align:right">Worst 5Y</th>
+            <th style="text-align:right">Worst 7Y</th>
+            <th style="text-align:right">Worst 10Y</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <p style="color:var(--muted);font-size:12px;margin-top:10px;line-height:1.5;">
+        Negative = held at a loss at the end of the period. Positive = even the worst entry would have made you money. Hover a cell for the exact start and end dates.
+      </p>
     </div>
   </div>
 
@@ -2262,6 +2322,7 @@
     }
     renderDCA();
     renderPortfolio();
+    renderHoldingPeriods();
   }
 
   function renderHeader() {
@@ -3204,6 +3265,80 @@
     container.innerHTML = html;
   }
 
+  // --- Holding Periods (rolling-window backtest) ---
+  const HOLDING_PERIODS_YEARS = [1, 2, 3, 4, 5, 7, 10];
+
+  // For a price series, compute every rolling N-year window and return
+  // { count, profitable, worst: { startDate, endDate, returnPct } }
+  function rollingWindowStats(prices, years) {
+    const months = years * 12;
+    if (!prices || prices.length <= months) return null;
+    let profitable = 0;
+    let count = 0;
+    let worst = null;
+    for (let i = 0; i + months < prices.length; i++) {
+      const s = prices[i].close;
+      const e = prices[i + months].close;
+      if (!s || s <= 0 || !e || e <= 0 || !isFinite(s) || !isFinite(e)) continue;
+      const ret = (e / s - 1) * 100;
+      count++;
+      if (ret >= 0) profitable++;
+      if (worst === null || ret < worst.returnPct) {
+        worst = { startDate: prices[i].date, endDate: prices[i + months].date, returnPct: ret };
+      }
+    }
+    return count > 0 ? { count, profitable, worst } : null;
+  }
+
+  function renderHoldingPeriods() {
+    const selected = getSelectedAssets();
+    const empty = document.getElementById('holdingEmptyState');
+    const mainCard = document.getElementById('holdingMainCard');
+    const worstCard = document.getElementById('holdingWorstCard');
+    if (selected.length === 0) {
+      if (empty) empty.style.display = 'block';
+      if (mainCard) mainCard.style.display = 'none';
+      if (worstCard) worstCard.style.display = 'none';
+      return;
+    }
+    if (empty) empty.style.display = 'none';
+    if (mainCard) mainCard.style.display = '';
+    if (worstCard) worstCard.style.display = '';
+
+    const passBody = document.querySelector('#holdingPassRateTable tbody');
+    const worstBody = document.querySelector('#holdingWorstTable tbody');
+    if (!passBody || !worstBody) return;
+
+    let passHtml = '';
+    let worstHtml = '';
+    selected.forEach(key => {
+      const asset = _data.assets[key];
+      if (!asset) return;
+      const prices = asset.monthlyPrices;
+      passHtml += '<tr><td><span class="asset-dot" style="background:' + asset.color + '"></span>' + asset.name + '</td>';
+      worstHtml += '<tr><td><span class="asset-dot" style="background:' + asset.color + '"></span>' + asset.name + '</td>';
+      HOLDING_PERIODS_YEARS.forEach(yrs => {
+        const stats = rollingWindowStats(prices, yrs);
+        if (!stats) {
+          passHtml += '<td style="text-align:center;color:var(--muted);">—</td>';
+          worstHtml += '<td style="text-align:right;color:var(--muted);">—</td>';
+          return;
+        }
+        const pct = (stats.profitable / stats.count) * 100;
+        const cellColor = pct >= 95 ? 'var(--green)' : pct >= 80 ? 'var(--blue)' : pct >= 50 ? 'var(--accent)' : 'var(--red)';
+        passHtml += '<td style="text-align:center;font-weight:700;color:' + cellColor + ';" title="' + stats.profitable + ' of ' + stats.count + ' rolling ' + yrs + '-year windows ended in profit">' + pct.toFixed(0) + '% <span style="color:var(--muted);font-weight:400;font-size:11px;">(' + stats.count + ')</span></td>';
+        const w = stats.worst;
+        const wColor = w.returnPct >= 0 ? 'var(--green)' : 'var(--red)';
+        const wSign = w.returnPct >= 0 ? '+' : '';
+        worstHtml += '<td style="text-align:right;color:' + wColor + ';font-weight:600;" title="Started ' + w.startDate + ' → ended ' + w.endDate + '">' + wSign + w.returnPct.toFixed(0) + '%</td>';
+      });
+      passHtml += '</tr>';
+      worstHtml += '</tr>';
+    });
+    passBody.innerHTML = passHtml;
+    worstBody.innerHTML = worstHtml;
+  }
+
   // --- My Portfolio ---
   function buildPieChartSVG(aggregated, totalValue) {
     const size = 400;
@@ -3697,6 +3832,8 @@
           renderMyPortfolio();
         } else if (tab === 'portfolio') {
           renderPortfolio();
+        } else if (tab === 'holding') {
+          renderHoldingPeriods();
         }
       });
     });
@@ -3839,6 +3976,8 @@
           setTimeout(renderDCAGrowthChart, 200);
         } else if (_settings.activeTab === 'myportfolio') {
           setTimeout(renderMyPortfolio, 50);
+        } else if (_settings.activeTab === 'holding') {
+          setTimeout(renderHoldingPeriods, 50);
         }
       }
     }
