@@ -404,6 +404,12 @@
     border-bottom: 1px solid rgba(51, 65, 85, 0.3);
   }
   .metrics-table td:last-child { text-align: right; font-weight: 600; }
+  .metric-since {
+    font-size: 11px;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 4px;
+  }
   .positive { color: var(--green); }
   .negative { color: var(--red); }
 
@@ -1957,6 +1963,24 @@
     return (Math.pow(endPrice / startPrice, 1 / actualYears) - 1) * 100;
   }
 
+  // Returns { date: 'Apr 2021', years: 5.0, truncated: false } describing
+  // the start of the window actually used for the N-year CAGR.
+  // truncated=true means the asset has less than N years of history.
+  function getReturnWindow(prices, years) {
+    if (!prices || prices.length < 2) return null;
+    const months = years * 12;
+    const startIdx = Math.max(0, prices.length - months - 1);
+    const endIdx = prices.length - 1;
+    if (startIdx >= endIdx) return null;
+    const actualYears = (endIdx - startIdx) / 12;
+    const truncated = actualYears < years - 0.05;
+    const dateStr = prices[startIdx].date; // 'YYYY-MM-DD'
+    const months3 = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const parts = dateStr.split('-');
+    const label = months3[parseInt(parts[1], 10) - 1] + ' ' + parts[0];
+    return { date: label, years: actualYears, truncated };
+  }
+
   function calcVolatility(prices) {
     if (!prices || prices.length < 24) return null;
     // Calculate annual returns for each 12-month period
@@ -2117,6 +2141,12 @@
         currentPrice: prices[prices.length - 1].close,
         priceDate: prices[prices.length - 1].date,
         returns: { '1': ret1, '3': ret3, '5': ret5, '10': ret10 },
+        returnWindows: {
+          '1': getReturnWindow(prices, 1),
+          '3': getReturnWindow(prices, 3),
+          '5': getReturnWindow(prices, 5),
+          '10': getReturnWindow(prices, 10)
+        },
         volatility: vol,
         maxDrawdown: dd,
         bestWorst: bw,
@@ -2211,6 +2241,16 @@
       const fiveYrHtml = fiveYr !== null && fiveYr !== undefined
         ? '<span class="' + (fiveYr >= 0 ? 'positive' : 'negative') + '">' + (fiveYr >= 0 ? '+' : '') + fiveYr.toFixed(1) + '%</span>'
         : '<span style="color:var(--muted)">N/A</span>';
+      const fiveYrWin = m.returnWindows && m.returnWindows['5'];
+      const fiveYrTooltip = fiveYrWin
+        ? '5-Year annualized return — since ' + fiveYrWin.date + (fiveYrWin.truncated ? ' (only ' + fiveYrWin.years.toFixed(1) + ' years of data)' : '')
+        : '5-Year annualized return';
+      const sinceLabel = (yrs) => {
+        const w = m.returnWindows && m.returnWindows[String(yrs)];
+        if (!w) return '';
+        const suffix = w.truncated ? ' (only ' + w.years.toFixed(1) + 'y)' : '';
+        return ' <span class="metric-since">since ' + w.date + suffix + '</span>';
+      };
 
       row.innerHTML = `
         <div class="asset-row-summary">
@@ -2221,7 +2261,7 @@
           </div>
           <span class="asset-row-category" style="background:${catColor}20;color:${catColor}">${asset.category}</span>
           <div class="asset-row-price">$${formatNum(m.currentPrice)}</div>
-          <div class="asset-row-return asset-row-return-col" title="5-Year annualized return">${fiveYrHtml}</div>
+          <div class="asset-row-return asset-row-return-col" title="${fiveYrTooltip}">${fiveYrHtml}</div>
           <div class="asset-row-grade ${m.grade.class}" title="Catch-Up Fit Score">${m.grade.letter}</div>
           <span class="asset-row-chevron">▶</span>
         </div>
@@ -2230,10 +2270,10 @@
           <div class="asset-price-date">as of ${m.priceDate}</div>
           <table class="metrics-table">
             <tr><th>Metric</th><th style="text-align:right">Value</th></tr>
-            <tr><td>1-Year Return</td><td>${fmtReturn(m.returns['1'])}</td></tr>
-            <tr><td>3-Year Return (ann.)</td><td>${fmtReturn(m.returns['3'])}</td></tr>
-            <tr><td>5-Year Return (ann.)</td><td>${fmtReturn(m.returns['5'])}</td></tr>
-            <tr><td>10-Year Return (ann.)</td><td>${fmtReturn(m.returns['10'])}</td></tr>
+            <tr><td>1-Year Return${sinceLabel(1)}</td><td>${fmtReturn(m.returns['1'])}</td></tr>
+            <tr><td>3-Year Return (ann.)${sinceLabel(3)}</td><td>${fmtReturn(m.returns['3'])}</td></tr>
+            <tr><td>5-Year Return (ann.)${sinceLabel(5)}</td><td>${fmtReturn(m.returns['5'])}</td></tr>
+            <tr><td>10-Year Return (ann.)${sinceLabel(10)}</td><td>${fmtReturn(m.returns['10'])}</td></tr>
             <tr><td>Volatility (Std Dev)</td><td>${m.volatility !== null ? m.volatility.toFixed(1) + '%' : 'N/A'}</td></tr>
             <tr><td>Max Drawdown</td><td class="negative">${m.maxDrawdown.drawdown.toFixed(1)}%</td></tr>
             <tr><td>Recovery Time</td><td>${m.maxDrawdown.recoveryMonths !== null ? m.maxDrawdown.recoveryMonths + ' months' : 'Not recovered'}</td></tr>
