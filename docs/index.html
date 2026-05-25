@@ -383,6 +383,48 @@
   .sel-btn:hover { color: var(--text); border-color: var(--text); }
   /* (legacy card classes removed — overview now uses .asset-row list) */
 
+  /* ===== EMPTY STATE BANNER (Compare & DCA tabs) ===== */
+  .empty-state {
+    background: linear-gradient(180deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02));
+    border: 1px solid rgba(245,158,11,0.4);
+    border-radius: 12px;
+    padding: 32px 24px;
+    margin-bottom: 20px;
+    text-align: center;
+  }
+  .empty-state-icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+    line-height: 1;
+  }
+  .empty-state-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 8px;
+  }
+  .empty-state-desc {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 18px;
+    max-width: 480px;
+    margin-left: auto;
+    margin-right: auto;
+    line-height: 1.5;
+  }
+  .empty-state-btn {
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.1s;
+  }
+  .empty-state-btn:hover { transform: translateY(-1px); }
+
   /* ===== METRICS TABLE ===== */
   .metrics-table {
     width: 100%;
@@ -1425,6 +1467,12 @@
 
   <!-- TAB: COMPARE -->
   <div class="tab-content" id="tab-compare">
+    <div class="empty-state" id="compareEmptyState" style="display:none;">
+      <div class="empty-state-icon">📊</div>
+      <div class="empty-state-title">Pick assets to compare</div>
+      <div class="empty-state-desc">Head over to the Overview tab and check the box next to any assets you want to see side-by-side. Their returns, volatility, and drawdowns will appear here.</div>
+      <button class="empty-state-btn" data-goto-overview>→ Go to Overview</button>
+    </div>
     <div class="card chart-container">
       <div class="chart-header">
         <span class="chart-title">Annualized Returns Comparison</span>
@@ -1456,6 +1504,12 @@
 
   <!-- TAB: DCA SIMULATOR -->
   <div class="tab-content" id="tab-dca">
+    <div class="empty-state" id="dcaEmptyState" style="display:none;">
+      <div class="empty-state-icon">💸</div>
+      <div class="empty-state-title">Pick assets to simulate</div>
+      <div class="empty-state-desc">The DCA Simulator shows what your monthly investing would have produced if you'd been buying a specific asset all along. Head to the Overview tab and check the assets you want to simulate.</div>
+      <button class="empty-state-btn" data-goto-overview>→ Go to Overview</button>
+    </div>
     <div class="card chart-container">
       <h2>Dollar-Cost Averaging Simulator</h2>
       <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
@@ -2339,6 +2393,19 @@
     return _settings.selectedAssets.filter(k => _data.assets[k] && _assetMetrics[k]);
   }
 
+  // Show/hide the empty-state banners on Compare and DCA tabs and hide the
+  // dependent chart cards so the user isn't staring at a blank canvas.
+  function updateEmptyStates(isEmpty) {
+    const compareBanner = document.getElementById('compareEmptyState');
+    const dcaBanner = document.getElementById('dcaEmptyState');
+    if (compareBanner) compareBanner.style.display = isEmpty ? 'block' : 'none';
+    if (dcaBanner) dcaBanner.style.display = isEmpty ? 'block' : 'none';
+    // Hide the chart/table cards when empty so the banner is the focal point
+    document.querySelectorAll('#tab-compare .card.chart-container, #tab-dca .card.chart-container').forEach(el => {
+      el.style.display = isEmpty ? 'none' : '';
+    });
+  }
+
   function updateSelectionCount() {
     const count = _settings.selectedAssets.length;
     const el = document.getElementById('selectionCount');
@@ -2418,6 +2485,7 @@
   }
 
   function renderCompareCharts() {
+    updateEmptyStates(getSelectedAssets().length === 0);
     renderReturnsChart();
     renderVolatilityChart();
     renderDrawdownChart();
@@ -3036,9 +3104,10 @@
     document.getElementById('dcaBudgetDisplay').textContent = '$' + budget.toLocaleString();
 
     const selected = getSelectedAssets();
+    updateEmptyStates(selected.length === 0);
 
     if (selected.length === 0) {
-      container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:40px;">Select assets on the Overview tab to see DCA simulations here.</p>';
+      container.innerHTML = '';
       return;
     }
 
@@ -3534,6 +3603,14 @@
       });
     }
     if (btnReset) btnReset.addEventListener('click', resetSettings);
+
+    // Empty-state "Go to Overview" buttons on Compare and DCA tabs
+    document.querySelectorAll('[data-goto-overview]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const overviewBtn = document.querySelector('.tab-btn[data-tab="overview"]');
+        if (overviewBtn) overviewBtn.click();
+      });
+    });
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
