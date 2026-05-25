@@ -81,6 +81,26 @@
   .data-action-btn.danger:hover { border-color: var(--red); color: var(--red); }
   .data-action-btn .icon { font-size: 13px; }
 
+  /* Stale data warning banner */
+  .stale-banner {
+    display: none;
+    background: rgba(245, 158, 11, 0.1);
+    border: 1px solid rgba(245, 158, 11, 0.5);
+    color: var(--accent);
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-size: 13px;
+    margin-bottom: 16px;
+    line-height: 1.5;
+  }
+  .stale-banner.severe {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: var(--red);
+  }
+  .stale-banner strong { font-weight: 700; }
+  .stale-banner a { color: inherit; text-decoration: underline; }
+
   /* Toast notification */
   .toast {
     position: fixed;
@@ -1254,6 +1274,9 @@
   </div>
   <div class="toast" id="toast"></div>
 
+  <!-- Stale-data warning (auto-shown if asset-data hasn't refreshed) -->
+  <div class="stale-banner" id="staleBanner"></div>
+
   <!-- PLAN SUMMARY (hidden on Freedom Number tab) -->
   <div class="plan-summary" id="planSummary">
     <div class="plan-summary-text" id="planSummaryText">
@@ -2243,6 +2266,30 @@
 
   function renderHeader() {
     document.getElementById('dataDate').textContent = 'Data as of: ' + (_data.lastUpdated || 'Unknown');
+    renderStaleBanner();
+  }
+
+  // Show a warning if the asset data file is older than 14 days. Most likely
+  // means the weekly GitHub Action that refreshes prices has stopped working
+  // (Yahoo ticker changed, network failure, etc.). Surfacing this in the UI
+  // means we don't have to remember to check the Actions tab.
+  function renderStaleBanner() {
+    const banner = document.getElementById('staleBanner');
+    if (!banner) return;
+    const last = _data.lastUpdated;
+    if (!last) { banner.style.display = 'none'; return; }
+    const lastMs = Date.parse(last);
+    if (isNaN(lastMs)) { banner.style.display = 'none'; return; }
+    const ageDays = Math.floor((Date.now() - lastMs) / (1000 * 60 * 60 * 24));
+    if (ageDays < 14) { banner.style.display = 'none'; return; }
+    const severe = ageDays >= 30;
+    banner.className = 'stale-banner' + (severe ? ' severe' : '');
+    banner.innerHTML =
+      (severe ? '🚨 ' : '⚠️ ') +
+      '<strong>Asset data is ' + ageDays + ' days old.</strong> ' +
+      'The automatic weekly refresh may have failed. ' +
+      'Check the <a href="https://github.com/jscott-62/catchup-asset-dashboard/actions" target="_blank" rel="noopener">workflow status</a> or run the refresh manually. Returns shown below reflect prices as of ' + last + '.';
+    banner.style.display = 'block';
   }
 
   function renderPlanSummary() {
