@@ -53,6 +53,56 @@
     font-size: 13px;
     text-align: right;
   }
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+  .data-actions {
+    display: flex;
+    gap: 6px;
+  }
+  .data-action-btn {
+    background: var(--card);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .data-action-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .data-action-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  .data-action-btn .icon { font-size: 13px; }
+
+  /* Toast notification */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--card);
+    border: 1px solid var(--accent);
+    color: var(--text);
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+    z-index: 1000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.2s;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(-8px); }
+  .toast.error { border-color: var(--red); }
+  .toast.success { border-color: var(--green); }
 
   /* ===== USER INPUT PANEL ===== */
   .input-panel {
@@ -1144,8 +1194,17 @@
       <h1>The Great Catch-Up: Asset Comparison</h1>
       <div class="subtitle">Evaluate catch-up assets based on YOUR numbers</div>
     </div>
-    <div class="data-date" id="dataDate">Data as of: Loading...</div>
+    <div class="header-right">
+      <div class="data-date" id="dataDate">Data as of: Loading...</div>
+      <div class="data-actions">
+        <button class="data-action-btn" id="btnExport" title="Download your settings as a JSON file"><span class="icon">⬇</span> Export</button>
+        <button class="data-action-btn" id="btnImport" title="Load settings from a previously exported file"><span class="icon">⬆</span> Import</button>
+        <button class="data-action-btn danger" id="btnReset" title="Erase all your data and start fresh"><span class="icon">⟲</span> Reset</button>
+        <input type="file" id="importFileInput" accept="application/json,.json" style="display:none">
+      </div>
+    </div>
   </div>
+  <div class="toast" id="toast"></div>
 
   <!-- PLAN SUMMARY (hidden on Freedom Number tab) -->
   <div class="plan-summary" id="planSummary">
@@ -1576,6 +1635,104 @@
       _settings._savedAt = new Date().toISOString();
       localStorage.setItem('catchup-dashboard-settings', JSON.stringify(_settings));
     } catch(e) {}
+  }
+
+  // --- Export / Import / Reset ---
+  function showToast(message, kind) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = message;
+    t.className = 'toast show ' + (kind || '');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => { t.className = 'toast ' + (kind || ''); }, 3000);
+  }
+
+  function exportSettings() {
+    try {
+      const payload = {
+        _meta: {
+          app: 'catchup-asset-dashboard',
+          version: 1,
+          exportedAt: new Date().toISOString()
+        },
+        settings: _settings
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = 'catchup-data-' + ts + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 500);
+      showToast('Settings exported. Save this file to back up or move to another device.', 'success');
+    } catch (e) {
+      showToast('Export failed: ' + e.message, 'error');
+    }
+  }
+
+  function importSettings(file) {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const parsed = JSON.parse(ev.target.result);
+        // Accept either the wrapped payload {settings:{...}} or a bare settings object
+        const incoming = (parsed && parsed.settings) ? parsed.settings : parsed;
+        if (!incoming || typeof incoming !== 'object' || (!incoming.fn && incoming.requiredReturn === undefined)) {
+          throw new Error('This does not look like a Catch-Up settings file.');
+        }
+        if (!confirm('Replace your current data with this file?\n\nYour current data will be overwritten and cannot be recovered unless you exported it first.')) {
+          return;
+        }
+        // Merge incoming over defaults so missing keys keep working
+        Object.assign(_settings, incoming);
+        // Ensure nested fn object is fully populated
+        if (incoming.fn) Object.assign(_settings.fn, incoming.fn);
+        saveSettings();
+        // Re-run the same setup as page load
+        _activeAssets = Object.keys(_data.assets);
+        if (_settings.customTickers && _settings.customTickers.length) {
+          _settings.customTickers.forEach(t => {
+            if (_data.assets[t] && !_activeAssets.includes(t)) _activeAssets.push(t);
+          });
+        }
+        const defaultPct = Math.floor(100 / _activeAssets.length);
+        _activeAssets.forEach((key, i) => {
+          if (_settings.portfolioAllocations[key] === undefined) {
+            _settings.portfolioAllocations[key] = i === 0 ? 100 - defaultPct * (_activeAssets.length - 1) : defaultPct;
+          }
+        });
+        populateFNInputs();
+        computeAllMetrics();
+        renderAll();
+        renderFreedomNumber();
+        // Restore active tab
+        const activeTab = _settings.activeTab || 'freedom';
+        const tabBtn = document.querySelector('.tab-btn[data-tab="' + activeTab + '"]');
+        if (tabBtn) tabBtn.click();
+        showToast('Settings imported successfully.', 'success');
+      } catch (e) {
+        showToast('Import failed: ' + e.message, 'error');
+      }
+    };
+    reader.onerror = () => showToast('Could not read that file.', 'error');
+    reader.readAsText(file);
+  }
+
+  function resetSettings() {
+    if (!confirm('Erase all your data and start fresh?\n\nThis cannot be undone. If you want to save your data first, click Cancel and use Export.')) {
+      return;
+    }
+    try {
+      localStorage.removeItem('catchup-dashboard-settings');
+      showToast('Data cleared. Reloading...', 'success');
+      setTimeout(() => window.location.reload(), 600);
+    } catch (e) {
+      showToast('Reset failed: ' + e.message, 'error');
+    }
   }
 
   // --- Freedom Number Builder ---
@@ -3323,6 +3480,21 @@
 
   // --- Event Binding ---
   function bindEvents() {
+    // Data actions: Export / Import / Reset
+    const btnExport = document.getElementById('btnExport');
+    const btnImport = document.getElementById('btnImport');
+    const btnReset = document.getElementById('btnReset');
+    const importInput = document.getElementById('importFileInput');
+    if (btnExport) btnExport.addEventListener('click', exportSettings);
+    if (btnImport && importInput) {
+      btnImport.addEventListener('click', () => importInput.click());
+      importInput.addEventListener('change', (e) => {
+        importSettings(e.target.files[0]);
+        e.target.value = '';
+      });
+    }
+    if (btnReset) btnReset.addEventListener('click', resetSettings);
+
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
