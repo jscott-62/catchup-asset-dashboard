@@ -2113,20 +2113,35 @@
     };
   }
 
+  // Strip leading entries with invalid prices (zeros, nulls, NaN). Some
+  // assets' price histories have phantom rows from before the asset existed
+  // (e.g. SUI's monthlyPrices include 2022 entries with close=0). Dividing
+  // the DCA budget by zero would produce Infinity → NaN and poison every
+  // downstream calculation.
+  function sliceValidPrices(prices, months) {
+    if (!prices || !prices.length) return [];
+    const want = Math.max(0, prices.length - months);
+    let startIdx = want;
+    while (startIdx < prices.length && (!prices[startIdx].close || prices[startIdx].close <= 0 || !isFinite(prices[startIdx].close))) {
+      startIdx++;
+    }
+    return prices.slice(startIdx).filter(p => p.close > 0 && isFinite(p.close));
+  }
+
   function calcDCA(prices, monthlyAmount, months) {
     if (!prices || prices.length < 2) return null;
-    const startIdx = Math.max(0, prices.length - months);
+    const valid = sliceValidPrices(prices, months);
+    if (valid.length < 2) return null;
     let totalUnits = 0;
     let totalInvested = 0;
-    const actualMonths = prices.length - startIdx;
+    const actualMonths = valid.length;
 
-    for (let i = startIdx; i < prices.length; i++) {
-      const units = monthlyAmount / prices[i].close;
-      totalUnits += units;
+    for (let i = 0; i < valid.length; i++) {
+      totalUnits += monthlyAmount / valid[i].close;
       totalInvested += monthlyAmount;
     }
 
-    const endingValue = totalUnits * prices[prices.length - 1].close;
+    const endingValue = totalUnits * valid[valid.length - 1].close;
     const totalGain = endingValue - totalInvested;
     const gainPct = (totalGain / totalInvested) * 100;
     const years = actualMonths / 12;
@@ -2631,9 +2646,8 @@
     selected.forEach(key => {
       const asset = _data.assets[key];
       if (!asset) return;
-      const allPrices = asset.monthlyPrices;
-      const startIdx = Math.max(0, allPrices.length - months);
-      const prices = allPrices.slice(startIdx);
+      const prices = sliceValidPrices(asset.monthlyPrices, months);
+      if (prices.length < 2) return;
       let totalUnits = 0;
       let totalInvested = 0;
       const points = [];
@@ -2642,10 +2656,12 @@
         totalUnits += budget / p.close;
         totalInvested += budget;
         const currentValue = totalUnits * p.close;
+        if (!isFinite(currentValue)) return;
         points.push(currentValue);
         if (currentValue > globalMax) globalMax = currentValue;
       });
 
+      if (points.length < 2) return;
       if (points.length > maxLen) maxLen = points.length;
       datasets.push({ key, color: asset.color, points, dates: prices.map(p => p.date), totalInvested });
     });
