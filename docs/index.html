@@ -195,6 +195,54 @@
     border-color: rgba(34, 197, 94, 0.3);
   }
 
+  /* Doubling ladder visualization */
+  .ladder {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .ladder-rung {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 14px;
+  }
+  .ladder-rung.passed { opacity: 0.55; }
+  .ladder-rung.next {
+    border-color: var(--accent);
+    background: rgba(245, 158, 11, 0.08);
+  }
+  .ladder-rung.next .ladder-marker { background: var(--accent); color: var(--bg); }
+  .ladder-rung.you-are-here {
+    border-color: var(--green);
+    background: rgba(34, 197, 94, 0.08);
+    border-style: dashed;
+  }
+  .ladder-marker {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .ladder-rung.passed .ladder-marker { background: var(--green); color: var(--bg); }
+  .ladder-label { color: var(--text); }
+  .ladder-price {
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+  .ladder-rung.you-are-here .ladder-label { color: var(--green); font-weight: 700; }
+
   /* Stale data warning banner */
   .stale-banner {
     display: none;
@@ -1804,6 +1852,78 @@
       </div>
     </div>
 
+    <!-- Bitcoin inputs used by Rules 1 and 4 -->
+    <div class="rule-card" style="background:linear-gradient(180deg,rgba(245,158,11,0.04),transparent);">
+      <div class="rule-card-header">
+        <div>
+          <div class="rule-card-number">Your Numbers</div>
+          <div class="rule-card-title">Bitcoin cost basis + annual income need</div>
+        </div>
+      </div>
+      <div class="rule-card-summary">
+        Rules 1 and 4 need to know your average price paid for Bitcoin and how much you need to live on per year. Enter once. These numbers stay private to your browser.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px;margin-top:14px;">
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Your avg BTC cost basis</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
+            <input type="number" id="rule1CostBasis" min="0" step="100" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Annual income need (one year)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
+            <input type="number" id="rule1AnnualNeed" min="0" step="1000" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Doublings already harvested</label>
+          <select id="rule1HarvestsDone" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+            <option value="0">0 — haven't started yet</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rule 1: The Doubling Rule -->
+    <div class="rule-card">
+      <div class="rule-card-header">
+        <div>
+          <div class="rule-card-number">Rule 1</div>
+          <div class="rule-card-title">The Doubling Rule</div>
+        </div>
+        <div class="rule-card-tagline">One rule. One trigger. No charts.</div>
+      </div>
+      <div class="rule-card-summary">
+        Every time Bitcoin doubles from your last harvest price, sell enough to cover one year of living expenses. Then your next trigger doubles again. You never have to predict the top.
+      </div>
+      <div id="rule1Ladder" style="margin-top:18px;"></div>
+      <div class="rule-card-status" id="rule1Status">Enter your cost basis above to activate this rule.</div>
+    </div>
+
+    <!-- Rule 4: Calendar Harvest -->
+    <div class="rule-card">
+      <div class="rule-card-header">
+        <div>
+          <div class="rule-card-number">Rule 4</div>
+          <div class="rule-card-title">Calendar Harvest</div>
+        </div>
+        <div class="rule-card-tagline">For people drawing down on Bitcoin</div>
+      </div>
+      <div class="rule-card-summary">
+        In any year you need income, you must sell something if Bitcoin spent any part of the year at least 50% above your cost basis. Removes the "what if it goes higher" trap.
+      </div>
+      <div id="rule4Readout" style="margin-top:18px;"></div>
+      <div class="rule-card-status" id="rule4Status">Enter your cost basis above to activate this rule.</div>
+    </div>
+
     <!-- Rule 3: 200-Week Moving Average / Mayer Multiple (Bitcoin) -->
     <div class="rule-card">
       <div class="rule-card-header">
@@ -1879,6 +1999,12 @@
     selectedAssets: [],
     // My current holdings: [{ key: 'BTC', units: 0.5 }, ...]
     myHoldings: [],
+    // Selling Rules: user's avg BTC cost basis (for Rules 1 & 4) and
+    // the number of doubling harvests they've already done (so the
+    // Rule 1 ladder advances).
+    btcCostBasis: 0,
+    rule1HarvestsDone: 0,
+    rule1AnnualNeed: 60000,
     // Freedom Number Builder state
     fn: {
       expMode: 'simple',
@@ -3638,8 +3764,147 @@
 
   function renderSellingRules() {
     renderSellingFreedomStatus();
-    // Render the Mayer Multiple chart + readout for Bitcoin.
+    populateRule1Inputs();
+    renderRule1Doubling();
+    renderRule4Calendar();
     setTimeout(renderMayerChart, 50);
+  }
+
+  // --- Rules 1 (Doubling) and 4 (Calendar Harvest) ---
+  function populateRule1Inputs() {
+    const cb = document.getElementById('rule1CostBasis');
+    const need = document.getElementById('rule1AnnualNeed');
+    const done = document.getElementById('rule1HarvestsDone');
+    if (cb && document.activeElement !== cb) cb.value = _settings.btcCostBasis || '';
+    if (need && document.activeElement !== need) need.value = _settings.rule1AnnualNeed || '';
+    if (done) done.value = String(_settings.rule1HarvestsDone || 0);
+  }
+
+  function renderRule1Doubling() {
+    const ladderEl = document.getElementById('rule1Ladder');
+    const statusEl = document.getElementById('rule1Status');
+    if (!ladderEl || !statusEl) return;
+    const basis = Number(_settings.btcCostBasis) || 0;
+    const done = Number(_settings.rule1HarvestsDone) || 0;
+    if (!basis || basis < 100) {
+      ladderEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">Enter your average Bitcoin cost basis above to see your doubling ladder.</div>';
+      statusEl.className = 'rule-card-status';
+      statusEl.textContent = 'Inactive — needs your cost basis.';
+      return;
+    }
+    const btc = _data.assets.BTC;
+    if (!btc) return;
+    const currentPrice = btc.monthlyPrices[btc.monthlyPrices.length - 1].close;
+    // Build ladder: cost basis, 2x, 4x, 8x, 16x, 32x
+    const rungs = [];
+    for (let i = 0; i <= 5; i++) {
+      const trigger = basis * Math.pow(2, i);
+      let kind = '';
+      if (i === 0) kind = 'cost basis';
+      else if (i <= done) kind = 'harvested';
+      else if (i === done + 1) kind = 'next harvest';
+      else kind = 'future';
+      rungs.push({ i, trigger, kind });
+    }
+    // Mark which rung the current price sits between
+    let html = '<div class="ladder">';
+    let priceInserted = false;
+    rungs.forEach((r, idx) => {
+      // Insert "you are here" marker right before the next rung above current price
+      if (!priceInserted && r.trigger > currentPrice && r.kind !== 'cost basis') {
+        html += '<div class="ladder-rung you-are-here">'
+          + '<div class="ladder-marker">▶</div>'
+          + '<div class="ladder-label">Bitcoin today</div>'
+          + '<div class="ladder-price">$' + formatNum(currentPrice) + '</div>'
+          + '</div>';
+        priceInserted = true;
+      }
+      const cls = r.kind === 'harvested' ? 'passed'
+        : r.kind === 'next harvest' ? 'next'
+        : '';
+      const mark = r.kind === 'harvested' ? '✓'
+        : r.kind === 'next harvest' ? '!'
+        : r.kind === 'cost basis' ? '$'
+        : (r.i + 1);
+      const label = r.kind === 'cost basis' ? 'Your cost basis'
+        : r.kind === 'harvested' ? (r.i + 'x — already harvested')
+        : r.kind === 'next harvest' ? ('Next harvest at ' + Math.pow(2, r.i) + 'x')
+        : (Math.pow(2, r.i) + 'x trigger');
+      html += '<div class="ladder-rung ' + cls + '">'
+        + '<div class="ladder-marker">' + mark + '</div>'
+        + '<div class="ladder-label">' + label + '</div>'
+        + '<div class="ladder-price">$' + formatNum(r.trigger) + '</div>'
+        + '</div>';
+    });
+    if (!priceInserted) {
+      html += '<div class="ladder-rung you-are-here">'
+        + '<div class="ladder-marker">▶</div>'
+        + '<div class="ladder-label">Bitcoin today (above the top of the ladder)</div>'
+        + '<div class="ladder-price">$' + formatNum(currentPrice) + '</div>'
+        + '</div>';
+    }
+    html += '</div>';
+    ladderEl.innerHTML = html;
+    // Status message — "gainNeeded" = how much further Bitcoin must rise to hit the trigger
+    const nextTrigger = basis * Math.pow(2, done + 1);
+    const gainNeeded = ((nextTrigger / currentPrice) - 1) * 100;
+    statusEl.className = 'rule-card-status';
+    if (currentPrice >= nextTrigger) {
+      statusEl.classList.add('actionable');
+      statusEl.innerHTML = '<strong>Trigger hit.</strong> Bitcoin is at or above your next doubling trigger of $' + formatNum(nextTrigger) + '. The rule says: harvest enough to cover one year of living expenses, then bump your "harvests done" up by 1.';
+    } else if (gainNeeded < 10) {
+      statusEl.classList.add('actionable');
+      statusEl.innerHTML = '<strong>Approaching trigger.</strong> Bitcoin is within ' + gainNeeded.toFixed(1) + '% of your next harvest level at $' + formatNum(nextTrigger) + '. Decide in advance how much you would harvest so the decision is mechanical when it happens.';
+    } else {
+      statusEl.classList.add('calm');
+      statusEl.innerHTML = '<strong>No action needed.</strong> Bitcoin would need to rise <strong>' + gainNeeded.toFixed(0) + '%</strong> from here to reach your next harvest trigger of <strong>$' + formatNum(nextTrigger) + '</strong>. The rule is calm.';
+    }
+  }
+
+  function renderRule4Calendar() {
+    const readoutEl = document.getElementById('rule4Readout');
+    const statusEl = document.getElementById('rule4Status');
+    if (!readoutEl || !statusEl) return;
+    const basis = Number(_settings.btcCostBasis) || 0;
+    const annualNeed = Number(_settings.rule1AnnualNeed) || 0;
+    if (!basis || basis < 100) {
+      readoutEl.innerHTML = '<div style="color:var(--muted);font-size:13px;">Enter your cost basis to see your Calendar Harvest threshold.</div>';
+      statusEl.className = 'rule-card-status';
+      statusEl.textContent = 'Inactive — needs your cost basis.';
+      return;
+    }
+    const btc = _data.assets.BTC;
+    const currentPrice = btc.monthlyPrices[btc.monthlyPrices.length - 1].close;
+    const threshold = basis * 1.5;
+    const pctAboveBasis = ((currentPrice / basis) - 1) * 100;
+    // Visual: cost basis | 50%-above threshold | current price
+    readoutEl.innerHTML =
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;">' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Your cost basis</div>' +
+          '<div style="font-size:20px;font-weight:700;margin-top:2px;">$' + formatNum(basis) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">50%-above trigger</div>' +
+          '<div style="font-size:20px;font-weight:700;margin-top:2px;color:var(--accent);">$' + formatNum(threshold) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg);border:1px solid ' + (currentPrice >= threshold ? 'var(--green)' : 'var(--border)') + ';border-radius:8px;padding:12px 14px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;">Bitcoin today</div>' +
+          '<div style="font-size:20px;font-weight:700;margin-top:2px;color:' + (currentPrice >= threshold ? 'var(--green)' : 'var(--text)') + ';">$' + formatNum(currentPrice) + '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:2px;">' + (pctAboveBasis >= 0 ? '+' : '') + pctAboveBasis.toFixed(0) + '% vs basis</div>' +
+        '</div>' +
+      '</div>';
+    statusEl.className = 'rule-card-status';
+    if (currentPrice >= threshold) {
+      statusEl.classList.add('actionable');
+      const btcToSell = annualNeed > 0 ? (annualNeed / currentPrice).toFixed(4) : null;
+      statusEl.innerHTML = '<strong>Triggered.</strong> Bitcoin is at $' + formatNum(currentPrice) + ', which is above your 50%-above-basis threshold of $' + formatNum(threshold) + '. If you need income this year, the rule says harvest now' +
+        (btcToSell ? ', selling about <strong>' + btcToSell + ' BTC</strong> to cover your $' + formatNum(annualNeed) + ' annual need at today\'s price.' : '.');
+    } else {
+      const gap = ((threshold / currentPrice) - 1) * 100;
+      statusEl.classList.add('calm');
+      statusEl.innerHTML = '<strong>Not triggered.</strong> Bitcoin is $' + formatNum(currentPrice) + ', which is ' + gap.toFixed(0) + '% below the 50%-above-basis threshold of $' + formatNum(threshold) + '. If you need income this year and Bitcoin stays here, the rule says consider a different source.';
+    }
   }
 
   // --- Rule 3: 200-Week MA / Mayer Multiple ---
@@ -4304,6 +4569,27 @@
       });
     }
     if (btnReset) btnReset.addEventListener('click', resetSettings);
+
+    // Selling Rules tab inputs (cost basis, annual need, harvests done)
+    const r1cb = document.getElementById('rule1CostBasis');
+    const r1need = document.getElementById('rule1AnnualNeed');
+    const r1done = document.getElementById('rule1HarvestsDone');
+    if (r1cb) r1cb.addEventListener('input', () => {
+      _settings.btcCostBasis = parseFloat(r1cb.value) || 0;
+      debounceSave();
+      renderRule1Doubling();
+      renderRule4Calendar();
+    });
+    if (r1need) r1need.addEventListener('input', () => {
+      _settings.rule1AnnualNeed = parseFloat(r1need.value) || 0;
+      debounceSave();
+      renderRule4Calendar();
+    });
+    if (r1done) r1done.addEventListener('change', () => {
+      _settings.rule1HarvestsDone = parseInt(r1done.value, 10) || 0;
+      debounceSave();
+      renderRule1Doubling();
+    });
 
     // Empty-state "Go to Overview" buttons on Compare and DCA tabs
     document.querySelectorAll('[data-goto-overview]').forEach(btn => {
