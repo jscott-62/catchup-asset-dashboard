@@ -81,6 +81,120 @@
   .data-action-btn.danger:hover { border-color: var(--red); color: var(--red); }
   .data-action-btn .icon { font-size: 13px; }
 
+  /* ===== SELLING RULES TAB ===== */
+  .selling-thesis {
+    background: linear-gradient(180deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.03));
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    border-radius: 12px;
+    padding: 24px 28px;
+    margin-bottom: 24px;
+  }
+  .selling-thesis-headline {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.3px;
+  }
+  .selling-thesis-body {
+    color: var(--text);
+    font-size: 14.5px;
+    line-height: 1.6;
+    max-width: 720px;
+  }
+  .selling-status {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+  }
+  .selling-status-icon {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .selling-status-body {
+    flex: 1;
+  }
+  .selling-status-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .selling-status-detail {
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.55;
+  }
+  .selling-status.green { border-color: rgba(34, 197, 94, 0.5); }
+  .selling-status.green .selling-status-title { color: var(--green); }
+  .selling-status.yellow { border-color: rgba(245, 158, 11, 0.5); }
+  .selling-status.yellow .selling-status-title { color: var(--accent); }
+  .selling-status.red { border-color: rgba(239, 68, 68, 0.5); }
+  .selling-status.red .selling-status-title { color: var(--red); }
+
+  .rule-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px 24px;
+    margin-bottom: 20px;
+  }
+  .rule-card-header {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    margin-bottom: 6px;
+    flex-wrap: wrap;
+  }
+  .rule-card-number {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .rule-card-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .rule-card-tagline {
+    color: var(--muted);
+    font-size: 13px;
+    margin-left: auto;
+  }
+  .rule-card-summary {
+    color: var(--muted);
+    font-size: 13.5px;
+    line-height: 1.55;
+    margin-bottom: 16px;
+  }
+  .rule-card-status {
+    margin-top: 12px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .rule-card-status.actionable {
+    background: rgba(245, 158, 11, 0.08);
+    border-color: rgba(245, 158, 11, 0.4);
+  }
+  .rule-card-status.urgent {
+    background: rgba(239, 68, 68, 0.08);
+    border-color: rgba(239, 68, 68, 0.4);
+  }
+  .rule-card-status.calm {
+    background: rgba(34, 197, 94, 0.06);
+    border-color: rgba(34, 197, 94, 0.3);
+  }
+
   /* Stale data warning banner */
   .stale-banner {
     display: none;
@@ -1310,6 +1424,7 @@
     <button class="tab-btn" data-tab="myportfolio">5. My Portfolio</button>
     <button class="tab-btn" data-tab="portfolio">6. Portfolio Builder</button>
     <button class="tab-btn" data-tab="holding">7. Holding Periods</button>
+    <button class="tab-btn" data-tab="selling">8. Selling Rules</button>
   </div>
 
   <!-- TAB: FREEDOM NUMBER BUILDER -->
@@ -1668,6 +1783,29 @@
         Negative = held at a loss at the end of the period. Positive = even the worst entry would have made you money. Hover a cell for the exact start and end dates.
       </p>
     </div>
+  </div>
+
+  <!-- TAB: SELLING RULES (The Mechanical Harvest Framework) -->
+  <div class="tab-content" id="tab-selling">
+    <div class="selling-thesis">
+      <div class="selling-thesis-headline">Don't sell unless you have to.</div>
+      <div class="selling-thesis-body">
+        These rules are tools for when life requires harvesting, not a discipline to apply mechanically. If you are more than 5 years from your Freedom Number day and don't need this money, let it run. Compounding does the heavy lifting on a catch-up timeline, and every sale outside an IRA is a taxable event.
+        <br><br>
+        Reach for these rules when you actually need them.
+      </div>
+    </div>
+
+    <div class="selling-status" id="sellingFreedomStatus">
+      <div class="selling-status-icon">⏳</div>
+      <div class="selling-status-body">
+        <div class="selling-status-title">Your Freedom Number day</div>
+        <div class="selling-status-detail">Loading your timeline...</div>
+      </div>
+    </div>
+
+    <!-- Rule cards (Rules 1-4 + Rule 5 ladder) will populate here in subsequent commits -->
+    <div id="sellingRulesContent"></div>
   </div>
 
   <!-- DISCLAIMER -->
@@ -2395,6 +2533,7 @@
     renderDCA();
     renderPortfolio();
     renderHoldingPeriods();
+    renderSellingRules();
   }
 
   function renderHeader() {
@@ -3426,6 +3565,59 @@
     worstBody.innerHTML = worstHtml;
   }
 
+  // --- Selling Rules (The Mechanical Harvest Framework) ---
+  // Top-of-tab Freedom Number status: tells the user whether these rules
+  // are even relevant yet. Core thesis = don't sell unless you have to.
+  function renderSellingFreedomStatus() {
+    const box = document.getElementById('sellingFreedomStatus');
+    if (!box) return;
+    const years = parseFloat(_settings.timeline) || 0;
+    const iconEl = box.querySelector('.selling-status-icon');
+    const titleEl = box.querySelector('.selling-status-title');
+    const detailEl = box.querySelector('.selling-status-detail');
+    // Three zones based on how close they are to needing the money
+    let kind, icon, title, detail;
+    if (years >= 10) {
+      kind = 'green';
+      icon = '🌱';
+      title = 'You are ' + years + ' years from your Freedom Number day.';
+      detail = "You probably don't need these rules yet. Compounding does more for a catch-up plan than disciplined harvesting does. These rules are below for reference, in case Bitcoin runs hard before you need the money or your situation changes.";
+    } else if (years >= 5) {
+      kind = 'yellow';
+      icon = '⏳';
+      title = 'You are ' + years + ' years from your Freedom Number day.';
+      detail = 'You are in the transition zone. Holding still makes sense for most of your position, but you may want to start running through these rules once a year to identify any harvest opportunities — especially during major bull markets.';
+    } else {
+      kind = 'red';
+      icon = '🎯';
+      title = 'You are ' + years + ' years from your Freedom Number day.';
+      detail = 'These rules now matter. You are close enough to needing the money that harvest decisions affect your retirement directly. Run through them whenever Bitcoin makes a major move, or at minimum twice a year.';
+    }
+    box.className = 'selling-status ' + kind;
+    if (iconEl) iconEl.textContent = icon;
+    if (titleEl) titleEl.textContent = title;
+    if (detailEl) detailEl.textContent = detail;
+  }
+
+  function renderSellingRules() {
+    renderSellingFreedomStatus();
+    // Rule cards (1-5) will be populated by subsequent commits.
+    // Placeholder ensures the tab is functional even before that work lands.
+    const content = document.getElementById('sellingRulesContent');
+    if (content && !content.dataset.populated) {
+      content.innerHTML =
+        '<div class="rule-card">' +
+          '<div class="rule-card-header">' +
+            '<div><div class="rule-card-number">More coming</div>' +
+            '<div class="rule-card-title">Rules 1 through 5 will appear here</div></div>' +
+          '</div>' +
+          '<div class="rule-card-summary">' +
+            'The Doubling Rule, Allocation Rebalancing, 200-Week Moving Average / Mayer Multiple chart, Calendar Harvest, and the Ladder Selling Strategy for non-Bitcoin positions will live in this section. Each will pull from your My Portfolio data and tell you in plain language whether the rule has been triggered for your situation.' +
+          '</div>' +
+        '</div>';
+    }
+  }
+
   // --- My Portfolio ---
   function buildPieChartSVG(aggregated, totalValue) {
     const size = 400;
@@ -3921,6 +4113,8 @@
           renderPortfolio();
         } else if (tab === 'holding') {
           renderHoldingPeriods();
+        } else if (tab === 'selling') {
+          renderSellingRules();
         }
       });
     });
@@ -4065,6 +4259,8 @@
           setTimeout(renderMyPortfolio, 50);
         } else if (_settings.activeTab === 'holding') {
           setTimeout(renderHoldingPeriods, 50);
+        } else if (_settings.activeTab === 'selling') {
+          setTimeout(renderSellingRules, 50);
         }
       }
     }
