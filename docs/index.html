@@ -1961,7 +1961,90 @@
       <div class="rule-card-status" id="mayerStatus">Computing...</div>
     </div>
 
-    <!-- Rule cards (1, 2, 4, 5) will populate here in subsequent commits -->
+    <!-- Rule 2: Percentage Allocation -->
+    <div class="rule-card">
+      <div class="rule-card-header">
+        <div>
+          <div class="rule-card-number">Rule 2</div>
+          <div class="rule-card-title">Percentage Allocation</div>
+        </div>
+        <div class="rule-card-tagline">Self-balancing system</div>
+      </div>
+      <div class="rule-card-summary">
+        Decide what percentage of your net worth Bitcoin should be. When your actual allocation exceeds that target by 25% (e.g., a 40% target becomes a 50% trigger), rebalance the excess back to your target. Pure math, no emotion.
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Target BTC % of net worth</label>
+          <div style="position:relative;">
+            <input type="number" id="rule2TargetPct" min="1" max="99" step="1" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 30px 10px 14px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);">%</span>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Other assets (non-Bitcoin)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
+            <input type="number" id="rule2OtherAssets" min="0" step="1000" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stocks, cash, home equity, other non-Bitcoin retirement assets.</div>
+        </div>
+      </div>
+      <div id="rule2Readout"></div>
+      <div class="rule-card-status" id="rule2Status">Enter your numbers above to see your allocation status.</div>
+    </div>
+
+    <!-- Rule 5: Ladder Selling Strategy for non-Bitcoin positions -->
+    <div class="rule-card">
+      <div class="rule-card-header">
+        <div>
+          <div class="rule-card-number">Rule 5</div>
+          <div class="rule-card-title">Ladder Selling Strategy</div>
+        </div>
+        <div class="rule-card-tagline">For altcoins, narrative stocks, exit-positions</div>
+      </div>
+      <div class="rule-card-summary">
+        For positions you've decided to fully exit, sell in tranches based on how many times your money you've made (the "multiple"). The exact ladder depends on the asset's risk tier. Stocks follow thesis-driven rules, not price-driven ones.
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;margin-top:18px;">
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
+          <div style="font-size:12px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Low-cap crypto (high risk)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            Sell 25% at <strong style="color:var(--text);">10x</strong> from your cost basis<br>
+            Sell 25% at <strong style="color:var(--text);">15x</strong><br>
+            Sell 25% at <strong style="color:var(--text);">20x</strong><br>
+            Sell 25% at <strong style="color:var(--text);">25x</strong> or at clear cycle top
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
+          <div style="font-size:12px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Blue-chip crypto (ETH, SOL, SUI)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            Sell 25% at <strong style="color:var(--text);">5x</strong> from your cost basis<br>
+            Sell 25% at <strong style="color:var(--text);">8x</strong><br>
+            Sell 25% at <strong style="color:var(--text);">12x</strong><br>
+            Hold or sell remainder at cycle top
+          </div>
+        </div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
+          <div style="font-size:12px;color:var(--purple);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Narrative stocks (NVDA, TSLA)</div>
+          <div style="font-size:13px;color:var(--muted);line-height:1.7;">
+            Thesis-driven, not price-driven. Sell when:<br>
+            • The investment thesis materially breaks<br>
+            • Valuation becomes extreme<br>
+            • Position exceeds target % allocation<br>
+            • In an IRA: rebalance freely (no tax event)
+          </div>
+        </div>
+      </div>
+
+      <div id="rule5Holdings" style="margin-top:18px;"></div>
+      <div class="rule-card-status calm" style="margin-top:14px;">
+        <strong>Reminder.</strong> These rules apply only to positions you've decided to fully exit. For positions you intend to keep (especially Bitcoin), the core thesis stands: don't sell unless you have to.
+      </div>
+    </div>
+
+    <!-- Rule cards 1-5 are complete -->
     <div id="sellingRulesContent"></div>
   </div>
 
@@ -2005,6 +2088,9 @@
     btcCostBasis: 0,
     rule1HarvestsDone: 0,
     rule1AnnualNeed: 60000,
+    // Rule 2: target Bitcoin allocation as % of net worth + other-assets total
+    rule2TargetPct: 40,
+    rule2OtherAssets: 0,
     // Freedom Number Builder state
     fn: {
       expMode: 'simple',
@@ -3765,9 +3851,144 @@
   function renderSellingRules() {
     renderSellingFreedomStatus();
     populateRule1Inputs();
+    populateRule2Inputs();
     renderRule1Doubling();
+    renderRule2Allocation();
     renderRule4Calendar();
+    renderRule5Holdings();
     setTimeout(renderMayerChart, 50);
+  }
+
+  function populateRule2Inputs() {
+    const t = document.getElementById('rule2TargetPct');
+    const o = document.getElementById('rule2OtherAssets');
+    if (t && document.activeElement !== t) t.value = _settings.rule2TargetPct || 40;
+    if (o && document.activeElement !== o) o.value = _settings.rule2OtherAssets || '';
+  }
+
+  // --- Rule 2: Percentage Allocation ---
+  function renderRule2Allocation() {
+    const readout = document.getElementById('rule2Readout');
+    const status = document.getElementById('rule2Status');
+    if (!readout || !status) return;
+    // Compute current BTC value from My Portfolio holdings
+    const btcHolding = (_settings.myHoldings || []).find(h => h.key === 'BTC');
+    const btcPrice = _data.assets.BTC ? _data.assets.BTC.monthlyPrices[_data.assets.BTC.monthlyPrices.length - 1].close : 0;
+    const btcValue = (btcHolding && btcHolding.units > 0) ? btcHolding.units * btcPrice : 0;
+    const otherAssets = Number(_settings.rule2OtherAssets) || 0;
+    const targetPct = Number(_settings.rule2TargetPct) || 0;
+    const netWorth = btcValue + otherAssets;
+
+    if (btcValue === 0) {
+      readout.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;background:var(--bg);border-radius:8px;">Add your Bitcoin position on the <strong>My Portfolio</strong> tab to activate this rule.</div>';
+      status.className = 'rule-card-status';
+      status.textContent = 'Inactive — needs your Bitcoin holdings.';
+      return;
+    }
+    if (netWorth === 0 || targetPct === 0) {
+      readout.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:12px;background:var(--bg);border-radius:8px;">Enter your target % and other-assets value above.</div>';
+      status.className = 'rule-card-status';
+      status.textContent = 'Inactive — needs your target and other-assets value.';
+      return;
+    }
+    const currentPct = (btcValue / netWorth) * 100;
+    const targetDollar = netWorth * (targetPct / 100);
+    const triggerPct = targetPct * 1.25;
+    const triggerDollar = netWorth * (triggerPct / 100);
+    const excess = Math.max(0, btcValue - targetDollar);
+    // Visual bar
+    const barMax = Math.max(currentPct, triggerPct) * 1.1;
+    const targetPos = (targetPct / barMax) * 100;
+    const triggerPos = (triggerPct / barMax) * 100;
+    const currentPos = (currentPct / barMax) * 100;
+    readout.innerHTML =
+      '<div style="margin-bottom:14px;">' +
+        '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:6px;">' +
+          '<span>0%</span><span>Allocation</span><span>' + barMax.toFixed(0) + '%</span>' +
+        '</div>' +
+        '<div style="position:relative;height:32px;background:var(--bg);border-radius:8px;overflow:visible;">' +
+          // Target marker (left edge of "safe zone")
+          '<div style="position:absolute;left:' + targetPos + '%;top:-4px;bottom:-4px;width:2px;background:var(--green);"></div>' +
+          '<div style="position:absolute;left:' + targetPos + '%;top:-20px;font-size:10px;color:var(--green);font-weight:700;transform:translateX(-50%);white-space:nowrap;">Target ' + targetPct + '%</div>' +
+          // Trigger marker
+          '<div style="position:absolute;left:' + triggerPos + '%;top:-4px;bottom:-4px;width:2px;background:var(--red);"></div>' +
+          '<div style="position:absolute;left:' + triggerPos + '%;bottom:-22px;font-size:10px;color:var(--red);font-weight:700;transform:translateX(-50%);white-space:nowrap;">Trigger ' + triggerPct.toFixed(0) + '%</div>' +
+          // Current bar
+          '<div style="position:absolute;left:0;top:0;bottom:0;width:' + currentPos + '%;background:linear-gradient(90deg, rgba(245,158,11,0.6), var(--accent));border-radius:8px 0 0 8px;"></div>' +
+          // Current marker label
+          '<div style="position:absolute;left:' + currentPos + '%;top:50%;transform:translate(-50%,-50%);background:var(--accent);color:var(--bg);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;white-space:nowrap;">You: ' + currentPct.toFixed(0) + '%</div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:30px;font-size:13px;">' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Net worth</div>' +
+          '<div style="font-size:16px;font-weight:700;">$' + formatNum(netWorth) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Bitcoin today</div>' +
+          '<div style="font-size:16px;font-weight:700;">$' + formatNum(btcValue) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Target $ value</div>' +
+          '<div style="font-size:16px;font-weight:700;">$' + formatNum(targetDollar) + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Trigger $ value</div>' +
+          '<div style="font-size:16px;font-weight:700;color:' + (currentPct >= triggerPct ? 'var(--red)' : 'var(--text)') + ';">$' + formatNum(triggerDollar) + '</div>' +
+        '</div>' +
+      '</div>';
+    status.className = 'rule-card-status';
+    if (currentPct >= triggerPct) {
+      status.classList.add('urgent');
+      status.innerHTML = '<strong>Rebalance triggered.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, which exceeds your ' + triggerPct.toFixed(0) + '% trigger. The rule says: sell about <strong>$' + formatNum(excess) + '</strong> of Bitcoin to bring the position back to your ' + targetPct + '% target.';
+    } else if (currentPct >= targetPct) {
+      status.classList.add('calm');
+      status.innerHTML = '<strong>Above target but within tolerance.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, above your ' + targetPct + '% target but below the ' + triggerPct.toFixed(0) + '% trigger. No rebalance needed yet. The rule is calm.';
+    } else {
+      status.classList.add('calm');
+      const pctBelow = targetPct - currentPct;
+      status.innerHTML = '<strong>Under target.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, ' + pctBelow.toFixed(1) + ' percentage points below your ' + targetPct + '% target. No selling needed. If anything, this rule would suggest you can let Bitcoin run.';
+    }
+  }
+
+  // --- Rule 5: Ladder Strategy reference + your holdings categorized ---
+  function renderRule5Holdings() {
+    const holdingsEl = document.getElementById('rule5Holdings');
+    if (!holdingsEl) return;
+    const myHoldings = (_settings.myHoldings || []).filter(h => h.key && h.key !== 'BTC' && _data.assets[h.key] && h.units > 0);
+    if (myHoldings.length === 0) {
+      holdingsEl.innerHTML = '';
+      return;
+    }
+    // Categorize each non-BTC holding
+    const blueChipKeys = new Set(['ETH', 'SOL', 'SUI', 'ADA', 'AVAX', 'LINK', 'DOT']);
+    const narrativeKeys = new Set(['NVDA', 'TSLA', 'MSTR', 'IBIT', 'QQQ', 'SPY', 'ARKK', 'GLD']);
+    const rows = myHoldings.map(h => {
+      const asset = _data.assets[h.key];
+      const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
+      const value = h.units * price;
+      let category, catColor;
+      if (narrativeKeys.has(h.key)) { category = 'Narrative / stock'; catColor = 'var(--purple)'; }
+      else if (blueChipKeys.has(h.key)) { category = 'Blue-chip crypto'; catColor = 'var(--blue)'; }
+      else { category = 'Low-cap crypto'; catColor = 'var(--accent)'; }
+      return { h, asset, price, value, category, catColor };
+    });
+    let html = '<div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px;">Your non-Bitcoin positions, categorized</div>';
+    html += '<div style="overflow-x:auto;"><table class="dca-table"><thead><tr>';
+    html += '<th>Asset</th><th>Category</th><th style="text-align:right">Units</th><th style="text-align:right">Current price</th><th style="text-align:right">Position value</th>';
+    html += '</tr></thead><tbody>';
+    rows.forEach(r => {
+      html += '<tr>'
+        + '<td><span class="asset-dot" style="background:' + r.asset.color + '"></span>' + r.asset.name + '</td>'
+        + '<td style="color:' + r.catColor + ';font-weight:600;font-size:12px;">' + r.category + '</td>'
+        + '<td style="text-align:right;font-variant-numeric:tabular-nums;">' + r.h.units + '</td>'
+        + '<td style="text-align:right;font-variant-numeric:tabular-nums;">$' + formatNum(r.price) + '</td>'
+        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;">$' + formatNum(r.value) + '</td>'
+        + '</tr>';
+    });
+    html += '</tbody></table></div>';
+    html += '<p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;">For each position, apply the ladder above based on your cost basis. We don\'t track per-asset cost basis here yet, so you\'ll multiply your basis by 5x / 10x / etc. manually for now. If you want per-asset ladder triggers wired up, just ask.</p>';
+    holdingsEl.innerHTML = html;
   }
 
   // --- Rules 1 (Doubling) and 4 (Calendar Harvest) ---
@@ -4589,6 +4810,18 @@
       _settings.rule1HarvestsDone = parseInt(r1done.value, 10) || 0;
       debounceSave();
       renderRule1Doubling();
+    });
+    const r2tgt = document.getElementById('rule2TargetPct');
+    const r2oth = document.getElementById('rule2OtherAssets');
+    if (r2tgt) r2tgt.addEventListener('input', () => {
+      _settings.rule2TargetPct = parseFloat(r2tgt.value) || 0;
+      debounceSave();
+      renderRule2Allocation();
+    });
+    if (r2oth) r2oth.addEventListener('input', () => {
+      _settings.rule2OtherAssets = parseFloat(r2oth.value) || 0;
+      debounceSave();
+      renderRule2Allocation();
     });
 
     // Empty-state "Go to Overview" buttons on Compare and DCA tabs
