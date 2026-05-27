@@ -1908,20 +1908,37 @@
       <div class="rule-card-status" id="rule1Status">Enter your cost basis above to activate this rule.</div>
     </div>
 
-    <!-- Rule 4: Calendar Harvest -->
+    <!-- Rule 2: Percentage Allocation -->
     <div class="rule-card">
       <div class="rule-card-header">
         <div>
-          <div class="rule-card-number">Rule 4</div>
-          <div class="rule-card-title">Calendar Harvest</div>
+          <div class="rule-card-number">Rule 2</div>
+          <div class="rule-card-title">Percentage Allocation</div>
         </div>
-        <div class="rule-card-tagline">For people drawing down on Bitcoin</div>
+        <div class="rule-card-tagline">Self-balancing system</div>
       </div>
       <div class="rule-card-summary">
-        In any year you need income, you must sell something if Bitcoin spent any part of the year at least 50% above your cost basis. Removes the "what if it goes higher" trap.
+        Decide what percentage of your net worth Bitcoin should be. When your actual allocation exceeds that target by 25% (e.g., a 40% target becomes a 50% trigger), rebalance the excess back to your target. Pure math, no emotion.
       </div>
-      <div id="rule4Readout" style="margin-top:18px;"></div>
-      <div class="rule-card-status" id="rule4Status">Enter your cost basis above to activate this rule.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px;margin-bottom:14px;">
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Target BTC % of net worth</label>
+          <div style="position:relative;">
+            <input type="number" id="rule2TargetPct" min="1" max="99" step="1" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 30px 10px 14px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);">%</span>
+          </div>
+        </div>
+        <div>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Other assets (non-Bitcoin)</label>
+          <div style="position:relative;">
+            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
+            <input type="number" id="rule2OtherAssets" min="0" step="1000" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stocks, cash, home equity, other non-Bitcoin retirement assets.</div>
+        </div>
+      </div>
+      <div id="rule2Readout"></div>
+      <div class="rule-card-status" id="rule2Status">Enter your numbers above to see your allocation status.</div>
     </div>
 
     <!-- Rule 3: 200-Week Moving Average / Mayer Multiple (Bitcoin) -->
@@ -1961,37 +1978,20 @@
       <div class="rule-card-status" id="mayerStatus">Computing...</div>
     </div>
 
-    <!-- Rule 2: Percentage Allocation -->
+    <!-- Rule 4: Calendar Harvest -->
     <div class="rule-card">
       <div class="rule-card-header">
         <div>
-          <div class="rule-card-number">Rule 2</div>
-          <div class="rule-card-title">Percentage Allocation</div>
+          <div class="rule-card-number">Rule 4</div>
+          <div class="rule-card-title">Calendar Harvest</div>
         </div>
-        <div class="rule-card-tagline">Self-balancing system</div>
+        <div class="rule-card-tagline">For people drawing down on Bitcoin</div>
       </div>
       <div class="rule-card-summary">
-        Decide what percentage of your net worth Bitcoin should be. When your actual allocation exceeds that target by 25% (e.g., a 40% target becomes a 50% trigger), rebalance the excess back to your target. Pure math, no emotion.
+        In any year you need income, you must sell something if Bitcoin spent any part of the year at least 50% above your cost basis. Removes the "what if it goes higher" trap.
       </div>
-      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px;margin-bottom:14px;">
-        <div>
-          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Target BTC % of net worth</label>
-          <div style="position:relative;">
-            <input type="number" id="rule2TargetPct" min="1" max="99" step="1" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 30px 10px 14px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
-            <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);">%</span>
-          </div>
-        </div>
-        <div>
-          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Other assets (non-Bitcoin)</label>
-          <div style="position:relative;">
-            <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
-            <input type="number" id="rule2OtherAssets" min="0" step="1000" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
-          </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stocks, cash, home equity, other non-Bitcoin retirement assets.</div>
-        </div>
-      </div>
-      <div id="rule2Readout"></div>
-      <div class="rule-card-status" id="rule2Status">Enter your numbers above to see your allocation status.</div>
+      <div id="rule4Readout" style="margin-top:18px;"></div>
+      <div class="rule-card-status" id="rule4Status">Enter your cost basis above to activate this rule.</div>
     </div>
 
     <!-- Rule 5: Ladder Selling Strategy for non-Bitcoin positions -->
@@ -4118,9 +4118,13 @@
     statusEl.className = 'rule-card-status';
     if (currentPrice >= threshold) {
       statusEl.classList.add('actionable');
-      const btcToSell = annualNeed > 0 ? (annualNeed / currentPrice).toFixed(4) : null;
-      statusEl.innerHTML = '<strong>Triggered.</strong> Bitcoin is at $' + formatNum(currentPrice) + ', which is above your 50%-above-basis threshold of $' + formatNum(threshold) + '. If you need income this year, the rule says harvest now' +
-        (btcToSell ? ', selling about <strong>' + btcToSell + ' BTC</strong> to cover your $' + formatNum(annualNeed) + ' annual need at today\'s price.' : '.');
+      let amountLine = '.';
+      if (annualNeed > 0) {
+        const oneYearBtc = (annualNeed / currentPrice).toFixed(4);
+        const twoYearBtc = ((annualNeed * 2) / currentPrice).toFixed(4);
+        amountLine = ', selling about <strong>' + oneYearBtc + ' BTC</strong> ($' + formatNum(annualNeed) + ') for one year of expenses or <strong>' + twoYearBtc + ' BTC</strong> ($' + formatNum(annualNeed * 2) + ') for two years at today\'s price.';
+      }
+      statusEl.innerHTML = '<strong>Triggered.</strong> Bitcoin is at $' + formatNum(currentPrice) + ', which is above your 50%-above-basis threshold of $' + formatNum(threshold) + '. If you need income, the rule says harvest now' + amountLine;
     } else {
       const gap = ((threshold / currentPrice) - 1) * 100;
       statusEl.classList.add('calm');
