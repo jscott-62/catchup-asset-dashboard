@@ -1902,7 +1902,7 @@
         <div class="rule-card-tagline">One rule. One trigger. No charts.</div>
       </div>
       <div class="rule-card-summary">
-        Every time Bitcoin doubles from your last harvest price, sell enough to cover one year of living expenses. Then your next trigger doubles again. You never have to predict the top.
+        Every time Bitcoin doubles from your last harvest price, sell enough to cover one or two years of living expenses. Then your next trigger doubles again. You never have to predict the top.
       </div>
       <div id="rule1Ladder" style="margin-top:18px;"></div>
       <div class="rule-card-status" id="rule1Status">Enter your cost basis above to activate this rule.</div>
@@ -4072,7 +4072,7 @@
     statusEl.className = 'rule-card-status';
     if (currentPrice >= nextTrigger) {
       statusEl.classList.add('actionable');
-      statusEl.innerHTML = '<strong>Trigger hit.</strong> Bitcoin is at or above your next doubling trigger of $' + formatNum(nextTrigger) + '. The rule says: harvest enough to cover one year of living expenses, then bump your "harvests done" up by 1.';
+      statusEl.innerHTML = '<strong>Trigger hit.</strong> Bitcoin is at or above your next doubling trigger of $' + formatNum(nextTrigger) + '. The rule says: harvest enough to cover one or two years of living expenses, then bump your "harvests done" up by 1.';
     } else if (gainNeeded < 10) {
       statusEl.classList.add('actionable');
       statusEl.innerHTML = '<strong>Approaching trigger.</strong> Bitcoin is within ' + gainNeeded.toFixed(1) + '% of your next harvest level at $' + formatNum(nextTrigger) + '. Decide in advance how much you would harvest so the decision is mechanical when it happens.';
