@@ -1918,23 +1918,23 @@
         <div class="rule-card-tagline">Self-balancing system</div>
       </div>
       <div class="rule-card-summary">
-        Decide what percentage of your net worth Bitcoin should be. When your actual allocation exceeds that target by 25% (e.g., a 40% target becomes a 50% trigger), rebalance the excess back to your target. Pure math, no emotion.
+        Decide what percentage of your <strong>investable net worth</strong> Bitcoin should be. When your actual allocation exceeds that target by 25% (e.g., a 40% target becomes a 50% trigger), rebalance the excess back to your target. Pure math, no emotion. Use investable net worth only. Not home equity. Not your car. Not anything you would not actually sell to rebalance.
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-top:14px;margin-bottom:14px;">
         <div>
-          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Target BTC % of net worth</label>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Target BTC % of investable net worth</label>
           <div style="position:relative;">
             <input type="number" id="rule2TargetPct" min="1" max="99" step="1" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 30px 10px 14px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
             <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--muted);">%</span>
           </div>
         </div>
         <div>
-          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Other assets (non-Bitcoin)</label>
+          <label style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;display:block;margin-bottom:6px;">Other investable assets (non-Bitcoin)</label>
           <div style="position:relative;">
             <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--muted);">$</span>
             <input type="number" id="rule2OtherAssets" min="0" step="1000" style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 14px 10px 26px;color:var(--text);font-size:16px;font-weight:600;width:100%;outline:none;">
           </div>
-          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stocks, cash, home equity, other non-Bitcoin retirement assets.</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:4px;">Stocks, ETFs, cash, retirement accounts, other liquid assets. <strong>Do not include home equity</strong> or other illiquid wealth.</div>
         </div>
       </div>
       <div id="rule2Readout"></div>
@@ -2088,7 +2088,7 @@
     btcCostBasis: 0,
     rule1HarvestsDone: 0,
     rule1AnnualNeed: 60000,
-    // Rule 2: target Bitcoin allocation as % of net worth + other-assets total
+    // Rule 2: target Bitcoin allocation as % of investable net worth + other-assets total
     rule2TargetPct: 40,
     rule2OtherAssets: 0,
     // Freedom Number Builder state
@@ -3921,7 +3921,7 @@
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-top:30px;font-size:13px;">' +
         '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
-          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Net worth</div>' +
+          '<div style="font-size:11px;color:var(--muted);text-transform:uppercase;font-weight:600;">Investable net worth</div>' +
           '<div style="font-size:16px;font-weight:700;">$' + formatNum(netWorth) + '</div>' +
         '</div>' +
         '<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">' +
@@ -3940,14 +3940,14 @@
     status.className = 'rule-card-status';
     if (currentPct >= triggerPct) {
       status.classList.add('urgent');
-      status.innerHTML = '<strong>Rebalance triggered.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, which exceeds your ' + triggerPct.toFixed(0) + '% trigger. The rule says: sell about <strong>$' + formatNum(excess) + '</strong> of Bitcoin to bring the position back to your ' + targetPct + '% target.';
+      status.innerHTML = '<strong>Rebalance triggered.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, which exceeds your ' + triggerPct.toFixed(0) + '% trigger. The rule says: sell about <strong>$' + formatNum(excess) + '</strong> of Bitcoin to bring the position back to your ' + targetPct + '% target.';
     } else if (currentPct >= targetPct) {
       status.classList.add('calm');
-      status.innerHTML = '<strong>Above target but within tolerance.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, above your ' + targetPct + '% target but below the ' + triggerPct.toFixed(0) + '% trigger. No rebalance needed yet. The rule is calm.';
+      status.innerHTML = '<strong>Above target but within tolerance.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, above your ' + targetPct + '% target but below the ' + triggerPct.toFixed(0) + '% trigger. No rebalance needed yet. The rule is calm.';
     } else {
       status.classList.add('calm');
       const pctBelow = targetPct - currentPct;
-      status.innerHTML = '<strong>Under target.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of net worth, ' + pctBelow.toFixed(1) + ' percentage points below your ' + targetPct + '% target. No selling needed. If anything, this rule would suggest you can let Bitcoin run.';
+      status.innerHTML = '<strong>Under target.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, ' + pctBelow.toFixed(1) + ' percentage points below your ' + targetPct + '% target. No selling needed. If anything, this rule would suggest you can let Bitcoin run.';
     }
   }
 
