@@ -3943,7 +3943,7 @@
       status.innerHTML = '<strong>Rebalance triggered.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, which exceeds your ' + triggerPct.toFixed(0) + '% trigger. The rule says: sell about <strong>$' + formatNum(excess) + '</strong> of Bitcoin to bring the position back to your ' + targetPct + '% target.';
     } else if (currentPct >= targetPct) {
       status.classList.add('calm');
-      status.innerHTML = '<strong>Above target but within tolerance.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, above your ' + targetPct + '% target but below the ' + triggerPct.toFixed(0) + '% trigger. No rebalance needed yet. The rule is calm.';
+      status.innerHTML = '<strong>Above target but within tolerance.</strong> Your Bitcoin position is ' + currentPct.toFixed(1) + '% of investable net worth, above your ' + targetPct + '% target but below the ' + triggerPct.toFixed(0) + '% trigger. No rebalance needed yet.';
     } else {
       status.classList.add('calm');
       const pctBelow = targetPct - currentPct;
@@ -4078,7 +4078,7 @@
       statusEl.innerHTML = '<strong>Approaching trigger.</strong> Bitcoin is within ' + gainNeeded.toFixed(1) + '% of your next harvest level at $' + formatNum(nextTrigger) + '. Decide in advance how much you would harvest so the decision is mechanical when it happens.';
     } else {
       statusEl.classList.add('calm');
-      statusEl.innerHTML = '<strong>No action needed.</strong> Bitcoin would need to rise <strong>' + gainNeeded.toFixed(0) + '%</strong> from here to reach your next harvest trigger of <strong>$' + formatNum(nextTrigger) + '</strong>. The rule is calm.';
+      statusEl.innerHTML = '<strong>No action needed.</strong> Bitcoin would need to rise <strong>' + gainNeeded.toFixed(0) + '%</strong> from here to reach your next harvest trigger of <strong>$' + formatNum(nextTrigger) + '</strong>.';
     }
   }
 
@@ -4198,10 +4198,10 @@
       let msg = '';
       if (currentMM < 1.2) {
         statusEl.classList.add('calm');
-        msg = '<strong>No harvest signal.</strong> Bitcoin is trading below its long-term trend. Historically these have been accumulation zones, not exit zones. The rule is calm.';
+        msg = '<strong>No harvest signal.</strong> Bitcoin is trading below its long-term trend. Historically these have been accumulation zones, not exit zones.';
       } else if (currentMM < 1.8) {
         statusEl.classList.add('calm');
-        msg = '<strong>No harvest signal.</strong> Bitcoin is in its normal range relative to the 200-week average. The rule is calm.';
+        msg = '<strong>No harvest signal.</strong> Bitcoin is in its normal range relative to the 200-week average.';
       } else if (currentMM < 2.4) {
         statusEl.classList.add('actionable');
         msg = '<strong>Optional harvest zone.</strong> Bitcoin is stretched relative to its long-term trend. If you need to take income soon, this is a reasonable place to start. If you have 10+ years, no action needed.';
