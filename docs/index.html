@@ -5346,7 +5346,8 @@
     const inflSlider = document.getElementById('inflationSlider');
     if (inflSlider) {
       inflSlider.addEventListener('input', () => {
-        _settings.fn.inflationRate = parseFloat(inflSlider.value) || 3;
+        const v = parseFloat(inflSlider.value);
+        _settings.fn.inflationRate = isNaN(v) ? 3 : v;
         const inflValEl = document.getElementById('inflationValue');
         if (inflValEl) inflValEl.textContent = _settings.fn.inflationRate + '%';
         renderFreedomNumber();
