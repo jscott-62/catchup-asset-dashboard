@@ -3544,6 +3544,29 @@
     });
   }
 
+  // Draws a solid-backed pill label anchored to the right end of a horizontal
+  // target line. Call AFTER all other chart content so the pill sits on top —
+  // ticker symbols and bar value labels won't show through it.
+  function drawTargetPill(ctx, lineX, lineY, label, color) {
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    const textW = ctx.measureText(label).width;
+    const padX = 8;
+    const boxW = textW + padX * 2;
+    const boxH = 18;
+    const bx = lineX - boxW;
+    const by = lineY - boxH / 2;
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(bx, by, boxW, boxH);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 1;
+    ctx.strokeRect(bx, by, boxW, boxH);
+    ctx.fillStyle = color;
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, bx + padX, by + boxH / 2 + 1);
+    ctx.textBaseline = 'alphabetic';
+  }
+
   // Universe-wide Risk vs Return scatter. Plots every asset at once so the
   // user can spot clusters (semiconductor stocks bunched together, etc.) and
   // find the sweet spot — assets that hit their required return without an
@@ -3644,21 +3667,18 @@
       ctx.fillText(val.toFixed(0) + '%', x, h - margin.bottom + 16);
     }
 
-    // Required-return reference line
+    // Required-return reference line (label pill drawn AFTER points, below)
+    let requiredLineY = null;
     if (requiredReturn > yMin && requiredReturn < yMax) {
-      const ry = yScale(requiredReturn);
+      requiredLineY = yScale(requiredReturn);
       ctx.strokeStyle = 'rgba(245, 158, 11, 0.8)';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.moveTo(margin.left, ry);
-      ctx.lineTo(w - margin.right, ry);
+      ctx.moveTo(margin.left, requiredLineY);
+      ctx.lineTo(w - margin.right, requiredLineY);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = '#f59e0b';
-      ctx.font = 'bold 11px -apple-system, sans-serif';
-      ctx.textAlign = 'left';
-      ctx.fillText('Your target: ' + requiredReturn + '%', margin.left + 6, ry - 5);
     }
 
     // Axis titles
@@ -3672,7 +3692,19 @@
     ctx.fillText('Annualized Return (' + years + 'y)', 0, 0);
     ctx.restore();
 
-    // Selected on top of unselected
+    // Pre-compute pill bounding box so ticker labels can route around it.
+    const pillText = 'Target ' + requiredReturn + '%';
+    ctx.font = 'bold 11px -apple-system, sans-serif';
+    const pillTextW = ctx.measureText(pillText).width;
+    const pillBoxW = pillTextW + 16;
+    const pillRight = w - margin.right - 4;
+    const pillLeft = pillRight - pillBoxW;
+    const pillYTop = (requiredLineY !== null) ? requiredLineY - 11 : -Infinity;
+    const pillYBot = (requiredLineY !== null) ? requiredLineY + 11 : -Infinity;
+
+    // Selected on top of unselected. Label flips to the LEFT of the dot if its
+    // right-side placement would (a) extend past the plot edge, or (b) land
+    // inside the target pill's vertical band.
     const drawPoint = (p) => {
       const px = xScale(p.dd);
       const py = yScale(p.cagr);
@@ -3690,11 +3722,23 @@
       ctx.globalAlpha = 1;
       ctx.fillStyle = p.selected ? '#e2e8f0' : '#94a3b8';
       ctx.font = p.selected ? 'bold 11px -apple-system, sans-serif' : '10px -apple-system, sans-serif';
+      const labelW = ctx.measureText(p.key).width;
+      const labelY = py + 3;
+      const rightX = px + r + 3;
+      const inPillBand = (labelY >= pillYTop && labelY <= pillYBot);
+      const wouldHitPill = inPillBand && (rightX + labelW > pillLeft);
+      const wouldOverflowRight = (rightX + labelW > w - margin.right - 4);
+      const labelX = (wouldHitPill || wouldOverflowRight) ? px - r - 3 - labelW : rightX;
       ctx.textAlign = 'left';
-      ctx.fillText(p.key, px + r + 3, py + 3);
+      ctx.fillText(p.key, labelX, labelY);
     };
     points.filter(p => !p.selected).forEach(drawPoint);
     points.filter(p => p.selected).forEach(drawPoint);
+
+    // Target pill drawn LAST so it sits on top of any ticker labels
+    if (requiredLineY !== null) {
+      drawTargetPill(ctx, w - margin.right - 4, requiredLineY, 'Target ' + requiredReturn + '%', '#f59e0b');
+    }
   }
 
   function renderCompareCharts() {
@@ -3804,10 +3848,7 @@
       ctx.lineTo(w - margin.right, reqY);
       ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle = '#f59e0b';
-      ctx.textAlign = 'left';
-      ctx.font = 'bold 12px -apple-system, sans-serif';
-      ctx.fillText('Your Required: ' + _settings.requiredReturn + '%', margin.left + 8, reqY - 8);
+      drawTargetPill(ctx, w - margin.right - 4, reqY, 'Target ' + _settings.requiredReturn + '%', '#f59e0b');
     }
   }
 
