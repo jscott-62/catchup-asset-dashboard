@@ -2330,7 +2330,7 @@
           </div>
         </div>
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px 16px;">
-          <div style="font-size:12px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Blue-chip crypto (ETH, SOL, SUI)</div>
+          <div style="font-size:12px;color:var(--blue);font-weight:700;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px;">Blue-chip crypto (ETH, SOL)</div>
           <div style="font-size:13px;color:var(--muted);line-height:1.7;">
             Sell 25% at <strong style="color:var(--text);">5x</strong> from your cost basis<br>
             Sell 25% at <strong style="color:var(--text);">8x</strong><br>
@@ -4367,7 +4367,7 @@
       return;
     }
     // Categorize each non-BTC holding
-    const blueChipKeys = new Set(['ETH', 'SOL', 'SUI', 'ADA', 'AVAX', 'LINK', 'DOT']);
+    const blueChipKeys = new Set(['ETH', 'SOL']);
     const narrativeKeys = new Set(['NVDA', 'TSLA', 'MSTR', 'IBIT', 'QQQ', 'SPY', 'ARKK', 'GLD']);
     const rows = myHoldings.map(h => {
       const asset = _data.assets[h.key];

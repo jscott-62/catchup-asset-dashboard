@@ -17,7 +17,7 @@ import urllib.request
 from datetime import datetime, timedelta
 
 DEFAULT_ASSETS = {
-    # --- Crypto (Top 15 by market cap) ---
+    # --- Crypto (Bitcoin + 2 blue-chip alts) ---
     "BTC": {
         "ticker": "BTC-USD",
         "name": "Bitcoin",
@@ -32,106 +32,11 @@ DEFAULT_ASSETS = {
         "color": "#627eea",
         "source": "yahoo"
     },
-    "XRP": {
-        "ticker": "XRP-USD",
-        "name": "XRP",
-        "category": "Cryptocurrency",
-        "color": "#00aae4",
-        "source": "yahoo"
-    },
-    "BNB": {
-        "ticker": "BNB-USD",
-        "name": "BNB",
-        "category": "Cryptocurrency",
-        "color": "#f3ba2f",
-        "source": "yahoo"
-    },
     "SOL": {
         "ticker": "SOL-USD",
         "name": "Solana",
         "category": "Cryptocurrency",
         "color": "#9945ff",
-        "source": "yahoo"
-    },
-    "ADA": {
-        "ticker": "ADA-USD",
-        "name": "Cardano",
-        "category": "Cryptocurrency",
-        "color": "#0033ad",
-        "source": "yahoo"
-    },
-    "DOGE": {
-        "ticker": "DOGE-USD",
-        "name": "Dogecoin",
-        "category": "Cryptocurrency",
-        "color": "#c2a633",
-        "source": "yahoo"
-    },
-    "AVAX": {
-        "ticker": "AVAX-USD",
-        "name": "Avalanche",
-        "category": "Cryptocurrency",
-        "color": "#e84142",
-        "source": "yahoo"
-    },
-    "LINK": {
-        "ticker": "LINK-USD",
-        "name": "Chainlink",
-        "category": "Cryptocurrency",
-        "color": "#2a5ada",
-        "source": "yahoo"
-    },
-    "DOT": {
-        "ticker": "DOT-USD",
-        "name": "Polkadot",
-        "category": "Cryptocurrency",
-        "color": "#e6007a",
-        "source": "yahoo"
-    },
-    "SUI": {
-        # Yahoo's plain "SUI-USD" points to a different/dead token. The
-        # numeric-ID ticker is the real Sui (Mysten Labs, launched May 2023).
-        "ticker": "SUI20947-USD",
-        "name": "Sui",
-        "category": "Cryptocurrency",
-        "color": "#4da2ff",
-        "source": "yahoo"
-    },
-    "ATOM": {
-        "ticker": "ATOM-USD",
-        "name": "Cosmos",
-        "category": "Cryptocurrency",
-        "color": "#2e3148",
-        "source": "yahoo"
-    },
-    "UNI": {
-        # Yahoo's plain "UNI-USD" points to a different token. Numeric ID
-        # disambiguates to the real Uniswap (launched September 2020).
-        "ticker": "UNI7083-USD",
-        "name": "Uniswap",
-        "category": "Cryptocurrency",
-        "color": "#ff007a",
-        "source": "yahoo"
-    },
-    "LTC": {
-        "ticker": "LTC-USD",
-        "name": "Litecoin",
-        "category": "Cryptocurrency",
-        "color": "#bfbbbb",
-        "source": "yahoo"
-    },
-    "NEAR": {
-        "ticker": "NEAR-USD",
-        "name": "NEAR Protocol",
-        "category": "Cryptocurrency",
-        "color": "#00c08b",
-        "source": "yahoo"
-    },
-    "TAO": {
-        "ticker": "TAO22974-USD",
-        "name": "Bittensor (TAO)",
-        "category": "Cryptocurrency",
-        "color": "#ff5d1f",
         "source": "yahoo"
     },
     # --- Traditional Assets ---
