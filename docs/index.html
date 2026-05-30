@@ -2617,8 +2617,9 @@
     document.getElementById('spYears').value = fn.spYears;
     const inflSliderEl = document.getElementById('inflationSlider');
     const inflValEl = document.getElementById('inflationValue');
-    if (inflSliderEl) inflSliderEl.value = fn.inflationRate || 3;
-    if (inflValEl) inflValEl.textContent = (fn.inflationRate || 3) + '%';
+    const safeInfl = (typeof fn.inflationRate === 'number' && !isNaN(fn.inflationRate)) ? fn.inflationRate : 3;
+    if (inflSliderEl) inflSliderEl.value = safeInfl;
+    if (inflValEl) inflValEl.textContent = safeInfl + '%';
 
     // Apply mode toggle
     if (fn.expMode === 'detailed') {
@@ -2697,7 +2698,7 @@
 
     // Inflation-adjusted future target
     const _fnLocal = _settings.fn;
-    const inflPct = _fnLocal.inflationRate || 3;
+    const inflPct = (typeof _fnLocal.inflationRate === 'number' && !isNaN(_fnLocal.inflationRate)) ? _fnLocal.inflationRate : 3;
     const years = _fnLocal.spYears || 0;
     const inflFactor = Math.pow(1 + inflPct / 100, years);
     const freedomNumberFuture = result.freedomNumber * inflFactor;
