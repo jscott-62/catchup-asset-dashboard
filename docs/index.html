@@ -2746,6 +2746,7 @@
 
     // Full dashboard nests the Freedom Number under _settings.fn.calculatedFN
     const fn = (_settings.fn && _settings.fn.calculatedFN) || _settings.freedomNumber || 0;
+    const initial = (_settings.fn && _settings.fn.spSavings) || _settings.initialInvestment || 0;
     const selCount = _settings.selectedAssets.length;
     const dateStr = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
@@ -2757,8 +2758,9 @@
       <div class="ps-plan">
         <div>Freedom Number: <strong>${fn > 0 ? '$' + fn.toLocaleString() : '—'}</strong></div>
         <div>Required Return: <strong>${_settings.requiredReturn}% / year</strong></div>
-        <div>Timeline: <strong>${_settings.timeline} years</strong></div>
+        <div>Initial Investment: <strong>$${initial.toLocaleString()}</strong></div>
         <div>Monthly Investing: <strong>$${(_settings.monthlyBudget || 0).toLocaleString()}</strong></div>
+        <div>Timeline: <strong>${_settings.timeline} years</strong></div>
       </div>
 
       <h2>Risk vs Return Map</h2>
@@ -3432,10 +3434,14 @@
     bar.classList.add('show');
 
     const fn = _settings.fn || {};
+    const init = fn.spSavings || 0;
+    const initFrag = init > 0
+      ? `starting with <strong>$${init.toLocaleString()}</strong> and investing`
+      : `investing`;
     if (fn.calculatedFN > 0) {
-      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong> to reach <strong>$${fn.calculatedFN.toLocaleString()}</strong>.`;
+      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, ${initFrag} <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong> to reach <strong>$${fn.calculatedFN.toLocaleString()}</strong>.`;
     } else {
-      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, investing <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong>.`;
+      text.innerHTML = `Your plan: <strong>${_settings.requiredReturn}%</strong> required return over <strong>${_settings.timeline} years</strong>, ${initFrag} <strong>$${_settings.monthlyBudget.toLocaleString()}/mo</strong>.`;
     }
   }
 
