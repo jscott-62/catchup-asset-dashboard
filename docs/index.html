@@ -2840,6 +2840,7 @@
   let _assetMetrics = {};
   let _activeAssets = [];
   let _debounceTimer = null;
+  let _fnPropagateTimer = null;
   let _categoryFilter = 'all';
   let _expandedAssets = new Set();
 
@@ -3126,6 +3127,28 @@
     return (low + high) / 2;
   }
 
+  // Copy the Freedom Number tab's computed plan (required return, timeline,
+  // monthly investment) into the main settings that every other tab reads from.
+  // Required return only flows once there's a real Freedom Number to hit.
+  function syncPlanFromFN() {
+    const fn = _settings.fn || {};
+    _settings.timeline = fn.spYears || 15;
+    _settings.monthlyBudget = fn.spMonthly || 0;
+    if (fn.calculatedFN > 0) {
+      _settings.requiredReturn = fn.calculatedRR || 15;
+    }
+  }
+
+  // Recompute per-asset metrics (fit scores depend on required return/timeline)
+  // and repaint every tab. Debounced so live typing on the FN tab stays smooth.
+  function scheduleFNPropagate() {
+    clearTimeout(_fnPropagateTimer);
+    _fnPropagateTimer = setTimeout(() => {
+      computeAllMetrics();
+      renderAll();
+    }, 150);
+  }
+
   function renderFreedomNumber() {
     const result = calcFreedomNumber();
     _settings.fn.calculatedFN = result.freedomNumber;
@@ -3281,6 +3304,10 @@
         : `Starting with <strong>$${fn.spSavings.toLocaleString()}</strong> and adding <strong>$${fn.spMonthly.toLocaleString()}/mo</strong> for <strong>${fn.spYears} years</strong>, you need <strong>${rrPct}%</strong> annually to reach <strong>$${targetFN.toLocaleString(undefined,{maximumFractionDigits:0})}</strong>. ${tier.action}`;
       setRR(rrPct + '%', tier.color, realStr, tier.zoneLabel, hint, tier.zoneClass);
     }
+
+    // Keep every other tab in sync with the latest Freedom Number plan.
+    syncPlanFromFN();
+    scheduleFNPropagate();
   }
 
   function onFNInput() {
@@ -3315,11 +3342,10 @@
       return;
     }
 
-    // Push the Section 3 values and computed Required Return into the main settings
-    _settings.requiredReturn = fn.calculatedRR || 15;
-    _settings.timeline = fn.spYears || 15;
-    _settings.monthlyBudget = fn.spMonthly || 500;
-
+    // Push the Section 3 values and computed Required Return into the main
+    // settings (this now also happens automatically as you edit, but the
+    // button still jumps you to the Overview tab).
+    syncPlanFromFN();
     computeAllMetrics();
     renderAll();
     debounceSave();
