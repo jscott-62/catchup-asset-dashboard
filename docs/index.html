@@ -195,6 +195,58 @@
     border-color: rgba(34, 197, 94, 0.3);
   }
 
+  /* Rule 5 per-asset ladder cards */
+  .rule5-asset-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .rule5-asset-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .rule5-asset-name { font-weight: 600; color: var(--text); display: flex; align-items: center; }
+  .rule5-asset-meta { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .rule5-thesis { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .rule5-basis-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+  .rule5-basis-row label { font-size: 13px; color: var(--text); }
+  .rule5-basis-input { position: relative; display: inline-flex; align-items: center; }
+  .rule5-basis-input .rule5-dollar { position: absolute; left: 10px; color: var(--muted); font-size: 14px; }
+  .rule5-cb-input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px 8px 22px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    width: 130px;
+    outline: none;
+  }
+  .rule5-cb-input:focus { border-color: var(--accent); }
+  .rule5-tier-badge {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: 1px solid;
+    border-radius: 999px;
+    padding: 3px 10px;
+    margin-left: auto;
+  }
+  .rule5-current { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+
   /* Doubling ladder visualization */
   .ladder {
     display: flex;
@@ -2752,6 +2804,8 @@
     // Rule 2: target Bitcoin allocation as % of investable net worth + other-assets total
     rule2TargetPct: 40,
     rule2OtherAssets: 0,
+    // Rule 5: per-asset average cost basis ($ per coin/share), keyed by asset
+    rule5CostBasis: {},
     // Portfolio Mix tab state
     mixConservativePct: 40,
     mixConservativeTarget: 7,
@@ -5172,44 +5226,145 @@
     }
   }
 
-  // --- Rule 5: Ladder Strategy reference + your holdings categorized ---
+  // --- Rule 5: per-asset ladder triggers ---
+  // Crypto positions get a price ladder (sell 25% at each multiple of cost
+  // basis); everything else (stocks, ETFs, commodities, MSTR/IBIT) is
+  // thesis-driven and shows no price triggers.
+  const RULE5_LADDERS = {
+    lowcap:   { label: 'Low-cap crypto',   color: 'var(--accent)', rungs: [10, 15, 20, 25], remainder: false },
+    bluechip: { label: 'Blue-chip crypto', color: 'var(--blue)',   rungs: [5, 8, 12],        remainder: true }
+  };
+
+  function rule5Tier(key, asset) {
+    if (asset.category === 'Cryptocurrency') {
+      return (key === 'ETH' || key === 'SOL') ? 'bluechip' : 'lowcap';
+    }
+    return 'narrative';
+  }
+
+  function fmtUnits(n) {
+    return n.toLocaleString(undefined, { maximumFractionDigits: n < 1 ? 4 : 2 });
+  }
+
+  // Total units held for an asset (holdings may list the same asset twice).
+  function rule5UnitsFor(key) {
+    return (_settings.myHoldings || [])
+      .filter(h => h.key === key && h.units > 0)
+      .reduce((s, h) => s + h.units, 0);
+  }
+
   function renderRule5Holdings() {
     const holdingsEl = document.getElementById('rule5Holdings');
     if (!holdingsEl) return;
-    const myHoldings = (_settings.myHoldings || []).filter(h => h.key && h.key !== 'BTC' && _data.assets[h.key] && h.units > 0);
-    if (myHoldings.length === 0) {
+    const valid = (_settings.myHoldings || []).filter(h => h.key && h.key !== 'BTC' && _data.assets[h.key] && h.units > 0);
+    if (valid.length === 0) {
       holdingsEl.innerHTML = '';
       return;
     }
-    // Categorize each non-BTC holding
-    const blueChipKeys = new Set(['ETH', 'SOL']);
-    const narrativeKeys = new Set(['NVDA', 'TSLA', 'MSTR', 'IBIT', 'QQQ', 'SPY', 'ARKK', 'GLD']);
-    const rows = myHoldings.map(h => {
-      const asset = _data.assets[h.key];
+    if (!_settings.rule5CostBasis) _settings.rule5CostBasis = {};
+
+    // Aggregate units by asset so each position shows once.
+    const byKey = {};
+    valid.forEach(h => { byKey[h.key] = (byKey[h.key] || 0) + h.units; });
+
+    let html = '<div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:12px;">Your non-Bitcoin positions, with live ladder triggers</div>';
+    html += '<div style="display:flex;flex-direction:column;gap:14px;">';
+    Object.keys(byKey).forEach(key => {
+      const asset = _data.assets[key];
+      const units = byKey[key];
       const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
-      const value = h.units * price;
-      let category, catColor;
-      if (narrativeKeys.has(h.key)) { category = 'Narrative / stock'; catColor = 'var(--purple)'; }
-      else if (blueChipKeys.has(h.key)) { category = 'Blue-chip crypto'; catColor = 'var(--blue)'; }
-      else { category = 'Low-cap crypto'; catColor = 'var(--accent)'; }
-      return { h, asset, price, value, category, catColor };
+      const value = units * price;
+      const tier = rule5Tier(key, asset);
+
+      html += '<div class="rule5-asset-card" data-key="' + key + '">';
+      html += '<div class="rule5-asset-head">'
+        + '<div class="rule5-asset-name"><span class="asset-dot" style="background:' + asset.color + '"></span>' + asset.name + '</div>'
+        + '<div class="rule5-asset-meta">' + fmtUnits(units) + ' units &middot; $' + formatNum(value) + '</div>'
+        + '</div>';
+
+      if (tier === 'narrative') {
+        html += '<div class="rule5-thesis"><span class="rule5-tier-badge" style="color:var(--purple);border-color:var(--purple);margin-left:0;">Thesis-driven</span><br><br>'
+          + 'Not price-driven. Sell when the investment thesis materially breaks, valuation becomes extreme, or the position grows past your target allocation. In a tax-advantaged account, rebalance freely (no tax event).</div>';
+      } else {
+        const L = RULE5_LADDERS[tier];
+        const basis = Number(_settings.rule5CostBasis[key]) || 0;
+        const unitWord = asset.category === 'Cryptocurrency' ? 'coin' : 'share';
+        html += '<div class="rule5-basis-row">'
+          + '<label>Your cost basis <span style="color:var(--muted);">($ per ' + unitWord + ')</span></label>'
+          + '<span class="rule5-basis-input"><span class="rule5-dollar">$</span>'
+          + '<input type="number" min="0" step="any" class="rule5-cb-input" data-key="' + key + '" value="' + (basis || '') + '" placeholder="0"></span>'
+          + '<span class="rule5-tier-badge" style="color:' + L.color + ';border-color:' + L.color + ';">' + L.label + '</span>'
+          + '</div>';
+        html += '<div class="rule5-ladder-wrap" id="rule5-ladder-' + key + '"></div>';
+      }
+      html += '</div>';
     });
-    let html = '<div style="font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:10px;">Your non-Bitcoin positions, categorized</div>';
-    html += '<div style="overflow-x:auto;"><table class="dca-table"><thead><tr>';
-    html += '<th>Asset</th><th>Category</th><th style="text-align:right">Units</th><th style="text-align:right">Current price</th><th style="text-align:right">Position value</th>';
-    html += '</tr></thead><tbody>';
-    rows.forEach(r => {
-      html += '<tr>'
-        + '<td><span class="asset-dot" style="background:' + r.asset.color + '"></span>' + r.asset.name + '</td>'
-        + '<td style="color:' + r.catColor + ';font-weight:600;font-size:12px;">' + r.category + '</td>'
-        + '<td style="text-align:right;font-variant-numeric:tabular-nums;">' + r.h.units + '</td>'
-        + '<td style="text-align:right;font-variant-numeric:tabular-nums;">$' + formatNum(r.price) + '</td>'
-        + '<td style="text-align:right;font-weight:600;font-variant-numeric:tabular-nums;">$' + formatNum(r.value) + '</td>'
-        + '</tr>';
-    });
-    html += '</tbody></table></div>';
-    html += '<p style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.5;">For each position, apply the ladder above based on your cost basis. We don\'t track per-asset cost basis here yet, so you\'ll multiply your basis by 5x / 10x / etc. manually for now. If you want per-asset ladder triggers wired up, just ask.</p>';
+    html += '</div>';
+    html += '<p style="font-size:12px;color:var(--muted);margin-top:12px;line-height:1.5;">Enter your average cost basis per position to see exact trigger prices and the dollar amount to sell at each rung. Crypto uses price ladders; stocks and stock-like positions (including MSTR and IBIT) are thesis-driven, so they show no price triggers. Cost basis is stored only in your browser.</p>';
     holdingsEl.innerHTML = html;
+
+    // Fill ladders and wire the cost-basis inputs.
+    Object.keys(byKey).forEach(key => {
+      if (rule5Tier(key, _data.assets[key]) !== 'narrative') updateRule5Ladder(key);
+    });
+    holdingsEl.querySelectorAll('.rule5-cb-input').forEach(inp => {
+      inp.addEventListener('input', () => {
+        const k = inp.dataset.key;
+        _settings.rule5CostBasis[k] = parseFloat(inp.value) || 0;
+        debounceSave();
+        updateRule5Ladder(k); // update only this asset's ladder so focus stays put
+      });
+    });
+  }
+
+  // Recompute and render one asset's ladder rungs into its sub-container.
+  function updateRule5Ladder(key) {
+    const wrap = document.getElementById('rule5-ladder-' + key);
+    if (!wrap) return;
+    const asset = _data.assets[key];
+    if (!asset) return;
+    const tier = rule5Tier(key, asset);
+    if (tier === 'narrative') { wrap.innerHTML = ''; return; }
+    const L = RULE5_LADDERS[tier];
+    const basis = Number((_settings.rule5CostBasis || {})[key]) || 0;
+    const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
+    const units = rule5UnitsFor(key);
+
+    if (!basis || basis <= 0) {
+      wrap.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:6px 0;">Enter your cost basis to see your ' + L.label.toLowerCase() + ' trigger prices.</div>';
+      return;
+    }
+
+    const currentMultiple = price / basis;
+    const nextIdx = L.rungs.findIndex(m => price < basis * m); // -1 once all hit
+    const sellUnits = units * 0.25;
+    const tk = asset.ticker.replace('-USD', ''); // BTC-USD -> BTC for display
+
+    let html = '<div class="rule5-current">Currently <strong style="color:' + (currentMultiple >= 1 ? 'var(--green)' : 'var(--text)') + ';">'
+      + currentMultiple.toFixed(2) + 'x</strong> your cost basis &middot; ' + tk + ' $' + formatNum(price) + ' vs basis $' + formatNum(basis) + '</div>';
+    html += '<div class="ladder" style="margin-top:8px;">';
+    L.rungs.forEach((m, i) => {
+      const trigger = basis * m;
+      const hit = price >= trigger;
+      const isNext = i === nextIdx;
+      const cls = hit ? 'passed' : (isNext ? 'next' : '');
+      const sellVal = sellUnits * trigger;
+      const detail = units > 0 ? ' (≈ ' + fmtUnits(sellUnits) + ' ' + tk + ', ≈ $' + formatNum(sellVal) + ')' : '';
+      html += '<div class="ladder-rung ' + cls + '">'
+        + '<div class="ladder-marker">' + (hit ? '✓' : m + 'x') + '</div>'
+        + '<div class="ladder-label">Sell 25%' + detail + (hit ? ' — trigger reached' : (isNext ? ' — next' : '')) + '</div>'
+        + '<div class="ladder-price">' + m + 'x = $' + formatNum(trigger) + '</div>'
+        + '</div>';
+    });
+    if (L.remainder) {
+      html += '<div class="ladder-rung">'
+        + '<div class="ladder-marker">&infin;</div>'
+        + '<div class="ladder-label">Hold final 25% or sell at a clear cycle top</div>'
+        + '<div class="ladder-price">remainder</div>'
+        + '</div>';
+    }
+    html += '</div>';
+    wrap.innerHTML = html;
   }
 
   // --- Rules 1 (Doubling) and 4 (Calendar Harvest) ---
