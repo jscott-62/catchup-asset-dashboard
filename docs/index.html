@@ -1554,7 +1554,7 @@
   /* ===== MY PORTFOLIO ===== */
   .holding-row {
     display: grid;
-    grid-template-columns: 2.5fr 1.5fr 1.5fr 1.5fr auto;
+    grid-template-columns: 2fr 1.1fr 1.3fr 1.2fr 1.2fr auto;
     gap: 12px;
     align-items: center;
     padding: 10px 12px;
@@ -1565,7 +1565,7 @@
   }
   .holding-header {
     display: grid;
-    grid-template-columns: 2.5fr 1.5fr 1.5fr 1.5fr auto;
+    grid-template-columns: 2fr 1.1fr 1.3fr 1.2fr 1.2fr auto;
     gap: 12px;
     padding: 0 12px 6px;
     font-size: 11px;
@@ -5287,7 +5287,7 @@
           + 'Not price-driven. Sell when the investment thesis materially breaks, valuation becomes extreme, or the position grows past your target allocation. In a tax-advantaged account, rebalance freely (no tax event).</div>';
       } else {
         const L = RULE5_LADDERS[tier];
-        const basis = Number(_settings.rule5CostBasis[key]) || 0;
+        const basis = getCostBasis(key);
         const unitWord = asset.category === 'Cryptocurrency' ? 'coin' : 'share';
         html += '<div class="rule5-basis-row">'
           + '<label>Your cost basis <span style="color:var(--muted);">($ per ' + unitWord + ')</span></label>'
@@ -5310,7 +5310,7 @@
     holdingsEl.querySelectorAll('.rule5-cb-input').forEach(inp => {
       inp.addEventListener('input', () => {
         const k = inp.dataset.key;
-        _settings.rule5CostBasis[k] = parseFloat(inp.value) || 0;
+        setCostBasis(k, inp.value); // shared with My Portfolio "Avg price paid"
         debounceSave();
         updateRule5Ladder(k); // update only this asset's ladder so focus stays put
       });
@@ -5326,7 +5326,7 @@
     const tier = rule5Tier(key, asset);
     if (tier === 'narrative') { wrap.innerHTML = ''; return; }
     const L = RULE5_LADDERS[tier];
-    const basis = Number((_settings.rule5CostBasis || {})[key]) || 0;
+    const basis = getCostBasis(key);
     const price = asset.monthlyPrices[asset.monthlyPrices.length - 1].close;
     const units = rule5UnitsFor(key);
 
@@ -5777,6 +5777,27 @@
     </svg>`;
   }
 
+  // Shared per-asset cost basis ($ per coin/share). Bitcoin's basis lives in
+  // btcCostBasis (used by Rule 1); every other asset lives in rule5CostBasis.
+  // This is the single source of truth behind the My Portfolio "Avg price paid"
+  // field and the Rule 5 ladder triggers, so a basis entered in one place shows
+  // up in the other.
+  function getCostBasis(key) {
+    if (!key) return 0;
+    if (key === 'BTC') return Number(_settings.btcCostBasis) || 0;
+    return Number((_settings.rule5CostBasis || {})[key]) || 0;
+  }
+  function setCostBasis(key, val) {
+    if (!key) return;
+    const v = parseFloat(val) || 0;
+    if (key === 'BTC') {
+      _settings.btcCostBasis = v;
+    } else {
+      if (!_settings.rule5CostBasis) _settings.rule5CostBasis = {};
+      _settings.rule5CostBasis[key] = v;
+    }
+  }
+
   function renderMyPortfolio() {
     const listEl = document.getElementById('holdingsList');
     const totalsEl = document.getElementById('portfolioTotalsWrap');
@@ -5792,6 +5813,7 @@
     let rowsHtml = `<div class="holding-header">
       <div>Asset</div>
       <div>Units / Shares</div>
+      <div>Avg Price Paid</div>
       <div>Current Price</div>
       <div>Dollar Value</div>
       <div></div>
@@ -5801,6 +5823,7 @@
       const asset = holding.key ? _data.assets[holding.key] : null;
       const price = asset ? asset.monthlyPrices[asset.monthlyPrices.length - 1].close : 0;
       const value = holding.units * price;
+      const basis = getCostBasis(holding.key);
 
       let optionsHtml = '<option value="">— select —</option>';
       availableKeys.forEach(k => {
@@ -5813,6 +5836,7 @@
         <div class="holding-row" data-idx="${idx}">
           <select class="holding-asset-select" data-idx="${idx}">${optionsHtml}</select>
           <input type="number" class="holding-units-input" data-idx="${idx}" min="0" step="any" value="${holding.units || ''}" placeholder="0">
+          <input type="number" class="holding-basis-input" data-idx="${idx}" min="0" step="any" value="${basis || ''}" placeholder="0" title="Average price you paid per coin/share (your cost basis)"${asset ? '' : ' disabled'}>
           <div class="holding-price">${asset ? '$' + formatNum(price) : '—'}</div>
           <div class="holding-value">${asset && holding.units > 0 ? '$' + formatNum(value) : '—'}</div>
           <button class="holding-remove" data-idx="${idx}">Remove</button>
@@ -5836,6 +5860,14 @@
         _settings.myHoldings[idx].units = parseFloat(e.target.value) || 0;
         debounceSave();
         renderMyPortfolioTotals();
+      });
+    });
+    listEl.querySelectorAll('.holding-basis-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const idx = parseInt(e.target.dataset.idx);
+        const key = _settings.myHoldings[idx] && _settings.myHoldings[idx].key;
+        if (key) setCostBasis(key, e.target.value); // shared with Rule 5 ladders
+        debounceSave();
       });
     });
     listEl.querySelectorAll('.holding-remove').forEach(btn => {
