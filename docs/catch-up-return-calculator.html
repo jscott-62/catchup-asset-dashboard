@@ -1,0 +1,513 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Bitcoin Catch-Up Return Calculator | Freedom Life 3.0</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zilla+Slab:wght@500;600;700&family=Libre+Franklin:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --desk:#1A1510;
+    --desk-2:#241C13;
+    --parchment:#F1E8D5;
+    --parchment-edge:#E4D6B8;
+    --ink:#2A2318;
+    --ink-soft:#6A5C43;
+    --gold:#B0791C;
+    --gold-ink:#7E560F;
+    --gold-bright:#D19A2E;
+    --sky:#2F5D74;
+    --sage:#4C6A4F;
+    --clay:#97402C;
+    --line:#D8C7A2;
+    --shadow:rgba(20,14,6,.45);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:"Libre Franklin",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:
+      radial-gradient(1200px 600px at 50% -10%, #2b2116 0%, rgba(43,33,22,0) 60%),
+      var(--desk);
+    color:var(--parchment);
+    min-height:100vh;
+    padding:32px 18px 56px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .stage{max-width:1000px;margin:0 auto;}
+
+  /* Masthead */
+  .masthead{text-align:center;margin:0 auto 22px;max-width:760px;}
+  .brandline{
+    font-family:"Space Mono",monospace;
+    font-size:12px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--gold-bright);margin:0 0 12px;
+  }
+  .masthead h1{
+    font-family:"Zilla Slab",Georgia,serif;
+    font-weight:700;font-size:clamp(28px,5vw,44px);line-height:1.02;
+    margin:0 0 10px;color:var(--parchment);letter-spacing:-.01em;
+  }
+  .masthead p{
+    margin:0;color:#cbbfa5;font-size:clamp(15px,2vw,17px);line-height:1.5;
+  }
+
+  /* Worksheet card */
+  .worksheet{
+    background:var(--parchment);
+    border:1px solid var(--parchment-edge);
+    border-radius:14px;
+    box-shadow:0 24px 60px var(--shadow), inset 0 1px 0 #fff8ea;
+    color:var(--ink);
+    overflow:hidden;
+  }
+  .ws-head{
+    display:flex;flex-wrap:wrap;gap:12px;align-items:baseline;justify-content:space-between;
+    padding:20px 26px;border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#f6eeddff,#efe5d0);
+  }
+  .ws-head h2{
+    font-family:"Zilla Slab",Georgia,serif;font-weight:600;font-size:20px;margin:0;color:var(--ink);
+  }
+  .today-chip{
+    font-family:"Space Mono",monospace;font-size:12.5px;color:var(--ink-soft);
+    background:#fff8ea;border:1px solid var(--line);border-radius:999px;
+    padding:6px 12px;white-space:nowrap;
+  }
+  .today-chip b{color:var(--gold-ink);}
+
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+  @media (max-width:760px){ .grid{grid-template-columns:1fr;} }
+
+  .panel{padding:26px;}
+  .panel.inputs{border-right:1px solid var(--line);}
+  @media (max-width:760px){ .panel.inputs{border-right:none;border-bottom:1px solid var(--line);} }
+
+  .eyebrow{
+    font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--gold-ink);margin:0 0 16px;
+  }
+
+  .field{margin-bottom:20px;}
+  .field:last-child{margin-bottom:0;}
+  .field label{display:block;font-weight:600;font-size:14.5px;color:var(--ink);margin-bottom:7px;}
+  .field .hint{font-weight:400;color:var(--ink-soft);font-size:12.5px;}
+
+  .inputwrap{position:relative;display:flex;align-items:center;}
+  .inputwrap .prefix{
+    position:absolute;left:14px;font-family:"Space Mono",monospace;color:var(--ink-soft);font-size:16px;pointer-events:none;
+  }
+  input[type="number"], input[type="date"]{
+    width:100%;font-family:"Space Mono",monospace;font-size:17px;color:var(--ink);
+    background:#fff8ea;border:1.5px solid var(--line);border-radius:9px;
+    padding:12px 14px;transition:border-color .15s, box-shadow .15s;
+  }
+  input.hasprefix{padding-left:30px;}
+  input:focus{outline:none;border-color:var(--sky);box-shadow:0 0 0 3px rgba(47,93,116,.18);}
+
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+  .chip{
+    font-family:"Space Mono",monospace;font-size:12.5px;
+    background:#fff8ea;border:1.5px solid var(--line);color:var(--ink-soft);
+    border-radius:999px;padding:6px 12px;cursor:pointer;transition:all .13s;
+  }
+  .chip:hover{border-color:var(--gold);color:var(--gold-ink);}
+  .chip.active{background:var(--gold);border-color:var(--gold);color:#fff8ea;}
+  .chip.small{padding:5px 10px;font-size:12px;}
+
+  /* Results */
+  .hero{
+    background:linear-gradient(160deg,#241c13,#171009);
+    border-radius:12px;padding:22px 24px;color:var(--parchment);
+    box-shadow:inset 0 1px 0 rgba(255,240,210,.08);
+    position:relative;overflow:hidden;
+  }
+  .hero .rlabel{
+    font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.22em;text-transform:uppercase;
+    color:#c9b78f;margin:0 0 4px;
+  }
+  .hero .big{
+    font-family:"Zilla Slab",Georgia,serif;font-weight:700;
+    font-size:clamp(46px,10vw,72px);line-height:.92;color:var(--gold-bright);
+    letter-spacing:-.02em;
+  }
+  .hero .big .unit{font-size:.32em;color:#cbbfa5;font-weight:600;letter-spacing:.04em;margin-left:4px;}
+  .hero .sub{font-size:13.5px;color:#c9b78f;margin-top:8px;}
+
+  .statrow{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;}
+  .stat{
+    background:#fff8ea;border:1px solid var(--line);border-radius:10px;padding:14px 16px;
+  }
+  .stat .k{font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-soft);}
+  .stat .v{font-family:"Zilla Slab",Georgia,serif;font-weight:700;font-size:26px;color:var(--ink);margin-top:3px;line-height:1;}
+
+  .money{margin-top:12px;background:#fff8ea;border:1px dashed var(--gold);border-radius:10px;padding:14px 16px;display:none;}
+  .money.show{display:block;}
+  .money .row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;}
+  .money .row + .row{margin-top:8px;padding-top:8px;border-top:1px solid var(--line);}
+  .money .k{font-size:13px;color:var(--ink-soft);}
+  .money .v{font-family:"Space Mono",monospace;font-weight:700;font-size:18px;color:var(--ink);}
+  .money .v.gain{color:var(--sage);}
+
+  .verdict{
+    margin-top:14px;border-radius:10px;padding:13px 16px;font-size:14.5px;line-height:1.45;
+    background:#f3ead6;border-left:4px solid var(--gold);color:var(--ink);
+  }
+  .verdict b{color:var(--gold-ink);}
+  .verdict.hot{border-left-color:var(--clay);}
+  .verdict.hot b{color:var(--clay);}
+  .verdict.cool{border-left-color:var(--sage);}
+  .verdict.cool b{color:#3c5540;}
+
+  /* Ridgeline */
+  .climb{border-top:1px solid var(--line);padding:22px 26px 26px;background:linear-gradient(180deg,#efe5d0,#f1e8d5);}
+  .climb h3{
+    font-family:"Space Mono",monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;
+    color:var(--gold-ink);margin:0 0 4px;
+  }
+  .climb .cap{font-size:13px;color:var(--ink-soft);margin:0 0 14px;}
+  .chartbox{width:100%;}
+  svg#ridge{width:100%;height:auto;display:block;}
+  .axis-label{font-family:"Space Mono",monospace;font-size:15px;fill:var(--ink-soft);}
+  .marker-label{font-family:"Space Mono",monospace;font-size:16px;font-weight:700;}
+
+  .footnote{
+    text-align:center;color:#8a7d63;font-size:12.5px;margin:20px auto 0;max-width:720px;line-height:1.5;
+  }
+  .footnote a{color:var(--gold-bright);}
+
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+<div class="stage">
+
+  <header class="masthead">
+    <p class="brandline">Freedom Life 3.0 · Calculated Rebellion</p>
+    <h1>What return are you actually betting on?</h1>
+    <p>Set a price target for Bitcoin and a date. This tool shows you the exact return baked into that bet, per year and in total. No hype. Just the math you're standing on.</p>
+  </header>
+
+  <div class="worksheet">
+    <div class="ws-head">
+      <h2>Run your numbers</h2>
+      <div class="today-chip">Bitcoin today: <b id="todayPrice">$61,865</b></div>
+    </div>
+
+    <div class="grid">
+      <!-- INPUTS -->
+      <section class="panel inputs">
+        <p class="eyebrow">Your inputs</p>
+
+        <div class="field">
+          <label for="entry">Your entry price <span class="hint">(what you paid, or would pay today)</span></label>
+          <div class="inputwrap">
+            <span class="prefix">$</span>
+            <input class="hasprefix" type="number" id="entry" value="61865" min="1" step="100" inputmode="decimal">
+          </div>
+          <div class="chips">
+            <button type="button" class="chip small" data-entry="61865">Today's price</button>
+            <button type="button" class="chip small" data-entry="30000">$30k</button>
+            <button type="button" class="chip small" data-entry="45000">$45k</button>
+            <button type="button" class="chip small" data-entry="90000">$90k</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="target">Target price</label>
+          <div class="inputwrap">
+            <span class="prefix">$</span>
+            <input class="hasprefix" type="number" id="target" value="500000" min="1" step="1000" inputmode="decimal">
+          </div>
+          <div class="chips" id="targetChips">
+            <button type="button" class="chip" data-target="250000">$250k</button>
+            <button type="button" class="chip active" data-target="500000">$500k</button>
+            <button type="button" class="chip" data-target="1000000">$1M</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="date">Target date</label>
+          <input type="date" id="date" value="2030-01-01">
+          <div class="chips" id="yearChips">
+            <button type="button" class="chip" data-year="2028">By 2028</button>
+            <button type="button" class="chip active" data-year="2030">By 2030</button>
+            <button type="button" class="chip" data-year="2035">By 2035</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="amount">Amount you're putting in <span class="hint">(optional)</span></label>
+          <div class="inputwrap">
+            <span class="prefix">$</span>
+            <input class="hasprefix" type="number" id="amount" placeholder="e.g. 10000" min="0" step="500" inputmode="decimal">
+          </div>
+        </div>
+      </section>
+
+      <!-- RESULTS -->
+      <section class="panel results" aria-live="polite">
+        <p class="eyebrow">What that bet requires</p>
+
+        <div class="hero">
+          <p class="rlabel">Annualized return</p>
+          <div class="big"><span id="cagr">69</span><span class="unit">% / yr</span></div>
+          <p class="sub" id="cagrSub">compounded every year until your target date</p>
+        </div>
+
+        <div class="statrow">
+          <div class="stat">
+            <div class="k">Total return</div>
+            <div class="v" id="multiple">8.1x</div>
+          </div>
+          <div class="stat">
+            <div class="k">Total gain</div>
+            <div class="v" id="totalpct">708%</div>
+          </div>
+        </div>
+
+        <div class="money" id="moneyBox">
+          <div class="row">
+            <span class="k">Projected value</span>
+            <span class="v" id="fv">$0</span>
+          </div>
+          <div class="row">
+            <span class="k">Profit above what you put in</span>
+            <span class="v gain" id="profit">$0</span>
+          </div>
+        </div>
+
+        <div class="verdict" id="verdict">
+          <b>Reality check.</b> <span id="verdictText">Ambitious. This needs a healthy bull cycle to land.</span>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIDGELINE -->
+    <div class="climb">
+      <h3>The climb ahead</h3>
+      <p class="cap" id="climbCap">From today's price to your summit, drawn as the trail you'd have to walk.</p>
+      <div class="chartbox">
+        <svg id="ridge" viewBox="0 0 1000 380" role="img" aria-labelledby="ridgeTitle">
+          <title id="ridgeTitle">Growth path from entry price to target price</title>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <p class="footnote">
+    Illustrative math on a hypothetical you control. Not a price prediction, and not a recommendation to buy.
+    Built for fellow late starters at <a href="https://freedomlife3.com" target="_blank" rel="noopener">Freedom Life 3.0</a>.
+  </p>
+
+</div>
+
+<script>
+(function(){
+  var TODAY_PRICE = 61865; // Bitcoin spot fallback, used for the "today" defaults
+
+  // Live price handoff: the dashboard embeds this page with ?btc=NNNNN so the
+  // "today" defaults track the same Bitcoin close shown everywhere else.
+  (function(){
+    try {
+      var p = new URLSearchParams(window.location.search).get("btc");
+      var v = p ? parseFloat(p) : NaN;
+      if (isFinite(v) && v > 0) TODAY_PRICE = Math.round(v);
+    } catch (e) {}
+  })();
+
+  var $ = function(id){ return document.getElementById(id); };
+  var entryEl=$("entry"), targetEl=$("target"), dateEl=$("date"), amountEl=$("amount");
+  var cagrEl=$("cagr"), cagrSub=$("cagrSub"), multipleEl=$("multiple"), totalpctEl=$("totalpct");
+  var fvEl=$("fv"), profitEl=$("profit"), moneyBox=$("moneyBox");
+  var verdictEl=$("verdict"), verdictText=$("verdictText"), climbCap=$("climbCap");
+  var ridge=$("ridge");
+
+  // Apply the live "today" price to the label, the default entry, and its chip.
+  $("todayPrice").textContent = usd(TODAY_PRICE,0);
+  entryEl.value = TODAY_PRICE;
+  var todayChip = document.querySelector('.chip[data-entry]');
+  if (todayChip) todayChip.setAttribute("data-entry", TODAY_PRICE);
+
+  var usdFmt0 = new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:0});
+  function usd(n,d){ return new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:(d==null?0:d)}).format(n); }
+  function num(el){ var v=parseFloat(el.value); return isFinite(v)?v:NaN; }
+
+  function yearsFromNow(dateStr){
+    var t=new Date(dateStr+"T00:00:00");
+    if(isNaN(t)) return NaN;
+    var now=new Date();
+    return (t.getTime()-now.getTime())/(365.25*24*3600*1000);
+  }
+
+  function verdictFor(cagr, valid){
+    if(!valid) return {cls:"", text:"Enter an entry price, a higher target, and a future date to see the return."};
+    if(cagr<=0)   return {cls:"hot",  text:"That's flat or a loss. Check your entry and target prices."};
+    if(cagr<15)   return {cls:"cool", text:"Right in line with a solid stock market. No heroics required to get there."};
+    if(cagr<30)   return {cls:"cool", text:"Strong, and inside Bitcoin's historical range. A reasonable base case for a catch-up vehicle."};
+    if(cagr<50)   return {cls:"",     text:"Ambitious. This needs a healthy bull cycle to land, not a slow drift upward."};
+    if(cagr<80)   return {cls:"hot",  text:"Demanding. You're betting on a full-strength bull run, so size the position with that in mind."};
+    return              {cls:"hot",  text:"Extreme. Treat this as a long shot, not the plan you retire on."};
+  }
+
+  function calc(){
+    var entry=num(entryEl), target=num(targetEl), years=yearsFromNow(dateEl.value), amount=num(amountEl);
+    var valid = isFinite(entry)&&entry>0&&isFinite(target)&&target>0&&isFinite(years)&&years>0;
+
+    var multiple = valid ? target/entry : NaN;
+    var totalPct = valid ? (multiple-1)*100 : NaN;
+    var cagr = (valid && multiple>0) ? (Math.pow(multiple,1/years)-1)*100 : NaN;
+
+    // CAGR display
+    if(valid){
+      var shown = Math.abs(cagr)>=100 ? Math.round(cagr) : Math.round(cagr*10)/10;
+      cagrEl.textContent = shown;
+      cagrSub.textContent = "compounded every year for "+(Math.round(years*10)/10)+" years";
+    } else {
+      cagrEl.textContent = "--";
+      cagrSub.textContent = "compounded every year until your target date";
+    }
+
+    multipleEl.textContent = valid ? (Math.round(multiple*10)/10)+"x" : "--";
+    totalpctEl.textContent = valid ? Math.round(totalPct)+"%" : "--";
+
+    // Money box
+    if(valid && isFinite(amount) && amount>0){
+      var fv = amount*multiple;
+      fvEl.textContent = usd(fv,0);
+      profitEl.textContent = usd(fv-amount,0);
+      moneyBox.classList.add("show");
+    } else {
+      moneyBox.classList.remove("show");
+    }
+
+    // Verdict
+    var v=verdictFor(cagr, valid);
+    verdictEl.className = "verdict "+(v.cls||"");
+    verdictText.textContent = v.text;
+
+    // Caption
+    if(valid){
+      climbCap.textContent = "From "+usd(entry,0)+" today up to "+usd(target,0)+", the ascent a steady "+(Math.round(cagr)||"")+"% per year would carve out.";
+    } else {
+      climbCap.textContent = "From today's price to your summit, drawn as the trail you'd have to walk.";
+    }
+
+    drawRidge(entry,target,years,valid,multiple);
+  }
+
+  // ---- Ridgeline chart ----
+  var NS="http://www.w3.org/2000/svg";
+  function el(name,attrs){ var e=document.createElementNS(NS,name); for(var k in attrs){ e.setAttribute(k,attrs[k]); } return e; }
+
+  function drawRidge(entry,target,years,valid,multiple){
+    while(ridge.firstChild){ ridge.removeChild(ridge.firstChild); }
+    var kept=document.createElementNS(NS,"title"); kept.id="ridgeTitle"; kept.textContent="Growth path from entry price to target price"; ridge.appendChild(kept);
+
+    var W=1000,H=380, mL=70,mR=40,mT=28,mB=44;
+    var x0=mL, x1=W-mR, y0=H-mB, y1=mT;
+
+    if(!valid || !(multiple>0)){
+      ridge.appendChild(el("line",{x1:x0,y1:y0,x2:x1,y2:y0,stroke:"#c9b78f","stroke-width":2}));
+      return;
+    }
+
+    var top = Math.max(target, entry)*1.06;
+    function px(t){ return x0+(x1-x0)*t; }        // t in [0,1]
+    function py(price){ return y0-(y0-y1)*(price/top); }
+
+    // background ridges for atmosphere
+    ridge.appendChild(el("path",{d:"M0 "+(H)+" L0 "+(y0-40)+" L180 "+(y0-96)+" L340 "+(y0-52)+" L520 "+(y0-120)+" L700 "+(y0-64)+" L860 "+(y0-132)+" L"+W+" "+(y0-72)+" L"+W+" "+H+" Z",fill:"#e6d9bd",opacity:"0.55"}));
+    ridge.appendChild(el("path",{d:"M0 "+(H)+" L0 "+(y0-8)+" L220 "+(y0-40)+" L420 "+(y0-14)+" L640 "+(y0-58)+" L840 "+(y0-20)+" L"+W+" "+(y0-40)+" L"+W+" "+H+" Z",fill:"#ddceac",opacity:"0.6"}));
+
+    // gridlines
+    var lines=4;
+    for(var i=1;i<=lines;i++){
+      var price=top*i/(lines+1);
+      var gy=py(price);
+      ridge.appendChild(el("line",{x1:x0,y1:gy,x2:x1,y2:gy,stroke:"#cbb98f","stroke-width":1,"stroke-dasharray":"2 6",opacity:"0.7"}));
+      var lbl=el("text",{x:x0-10,y:gy+5,"text-anchor":"end",class:"axis-label"});
+      lbl.textContent = "$"+Math.round(price/1000)+"k";
+      ridge.appendChild(lbl);
+    }
+
+    // growth curve points (constant CAGR path)
+    var N=64, pts=[];
+    for(var j=0;j<=N;j++){
+      var t=j/N;
+      var price=entry*Math.pow(multiple,t);
+      pts.push([px(t),py(price)]);
+    }
+    var d="M"+pts[0][0]+" "+pts[0][1];
+    for(var k=1;k<pts.length;k++){ d+=" L"+pts[k][0]+" "+pts[k][1]; }
+
+    // area fill under trail
+    var area=d+" L"+x1+" "+y0+" L"+x0+" "+y0+" Z";
+    var grad=el("linearGradient",{id:"trailFill",x1:"0",y1:"0",x2:"0",y2:"1"});
+    grad.appendChild(el("stop",{offset:"0%","stop-color":"#B0791C","stop-opacity":"0.42"}));
+    grad.appendChild(el("stop",{offset:"100%","stop-color":"#B0791C","stop-opacity":"0.04"}));
+    var defs=el("defs",{}); defs.appendChild(grad); ridge.appendChild(defs);
+    ridge.appendChild(el("path",{d:area,fill:"url(#trailFill)"}));
+
+    // the ascent line
+    ridge.appendChild(el("path",{d:d,fill:"none",stroke:"#B0791C","stroke-width":4,"stroke-linejoin":"round","stroke-linecap":"round"}));
+
+    // start marker (today)
+    var sx=pts[0][0], sy=pts[0][1];
+    ridge.appendChild(el("circle",{cx:sx,cy:sy,r:7,fill:"#2F5D74",stroke:"#fff8ea","stroke-width":2}));
+    var sl=el("text",{x:sx+2,y:sy+26,"text-anchor":"start",class:"marker-label",fill:"#2F5D74"});
+    sl.textContent="Today "+usd(entry,0);
+    ridge.appendChild(sl);
+
+    // summit flag (target)
+    var ex=pts[pts.length-1][0], ey=pts[pts.length-1][1];
+    ridge.appendChild(el("line",{x1:ex,y1:ey,x2:ex,y2:ey-30,stroke:"#2A2318","stroke-width":2}));
+    ridge.appendChild(el("path",{d:"M"+ex+" "+(ey-30)+" L"+(ex+24)+" "+(ey-24)+" L"+ex+" "+(ey-18)+" Z",fill:"#97402C"}));
+    ridge.appendChild(el("circle",{cx:ex,cy:ey,r:7,fill:"#B0791C",stroke:"#fff8ea","stroke-width":2}));
+    var tanchor = ex>W-160 ? "end":"start";
+    var tl=el("text",{x: ex>W-160 ? ex-12 : ex+12 ,y:ey-8,"text-anchor":tanchor,class:"marker-label",fill:"#7E560F"});
+    tl.textContent="Summit "+usd(target,0);
+    ridge.appendChild(tl);
+  }
+
+  // ---- Chip wiring ----
+  function wireChips(containerId, dataKey, targetInput, onSet){
+    var container=$(containerId);
+    if(!container) return;
+    container.addEventListener("click",function(e){
+      var b=e.target.closest(".chip"); if(!b) return;
+      var val=b.getAttribute(dataKey);
+      if(onSet){ onSet(val); } else { targetInput.value=val; }
+      Array.prototype.forEach.call(container.querySelectorAll(".chip"),function(c){c.classList.remove("active");});
+      b.classList.add("active");
+      calc();
+    });
+  }
+
+  // entry chips live inside the entry field, no single container id; wire directly
+  Array.prototype.forEach.call(document.querySelectorAll('.chip[data-entry]'),function(b){
+    b.addEventListener("click",function(){ entryEl.value=b.getAttribute("data-entry"); calc(); });
+  });
+  wireChips("targetChips","data-target",targetEl);
+  wireChips("yearChips","data-year",null,function(year){
+    dateEl.value = year+"-01-01";
+  });
+
+  // clear active state on chips when the matching input is typed in
+  function clearActive(sel){ Array.prototype.forEach.call(document.querySelectorAll(sel),function(c){c.classList.remove("active");}); }
+  entryEl.addEventListener("input",calc);
+  targetEl.addEventListener("input",function(){ clearActive("#targetChips .chip"); calc(); });
+  dateEl.addEventListener("input",function(){ clearActive("#yearChips .chip"); calc(); });
+  amountEl.addEventListener("input",calc);
+
+  calc();
+})();
+</script>
+</body>
+</html>

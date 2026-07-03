@@ -2011,6 +2011,7 @@
     <button class="tab-btn" data-tab="portfolio">7. Portfolio Builder</button>
     <button class="tab-btn" data-tab="holding">8. Holding Periods</button>
     <button class="tab-btn" data-tab="selling">9. Selling Rules</button>
+    <button class="tab-btn" data-tab="calculator">10. Return Calculator</button>
   </div>
 
   <!-- TAB: FREEDOM NUMBER BUILDER -->
@@ -2753,6 +2754,12 @@
 
     <!-- Rule cards 1-5 are complete -->
     <div id="sellingRulesContent"></div>
+  </div>
+
+  <div class="tab-content" id="tab-calculator">
+    <iframe id="calculatorFrame" title="Bitcoin Catch-Up Return Calculator"
+      style="width:100%;height:1100px;border:1px solid var(--border);border-radius:12px;background:#1A1510;display:block;"
+      loading="lazy"></iframe>
   </div>
 
   <!-- DISCLAIMER -->
@@ -6430,6 +6437,25 @@
       });
     });
 
+    // Load the Return Calculator iframe on first open, handing it the live
+    // Bitcoin close so its "today" defaults match the rest of the dashboard.
+    let _calculatorLoaded = false;
+    function loadCalculatorFrame() {
+      if (_calculatorLoaded) return;
+      const frame = document.getElementById('calculatorFrame');
+      if (!frame) return;
+      let btc = 61865;
+      try {
+        const mp = _data && _data.assets && _data.assets.BTC && _data.assets.BTC.monthlyPrices;
+        if (mp && mp.length) {
+          const last = mp[mp.length - 1];
+          if (last && isFinite(last.close) && last.close > 0) btc = Math.round(last.close);
+        }
+      } catch (e) {}
+      frame.src = 'catch-up-return-calculator.html?btc=' + btc;
+      _calculatorLoaded = true;
+    }
+
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -6458,6 +6484,8 @@
           renderHoldingPeriods();
         } else if (tab === 'selling') {
           renderSellingRules();
+        } else if (tab === 'calculator') {
+          loadCalculatorFrame();
         }
       });
     });
@@ -6671,6 +6699,8 @@
           setTimeout(renderHoldingPeriods, 50);
         } else if (_settings.activeTab === 'selling') {
           setTimeout(renderSellingRules, 50);
+        } else if (_settings.activeTab === 'calculator') {
+          loadCalculatorFrame();
         }
       }
     }
